@@ -13,13 +13,9 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCart } from '../Context/CartContext';  // Use relative path
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import  supabase  from '../../supabase.js';  // Use relative path
+import { createClient } from '@supabase/supabase-js';
 
-
-interface Category {
-  id: string;
-  name: string;
-  icon: string;
-}
 
 interface FoodCourt {
   id: string;
@@ -37,9 +33,6 @@ interface FoodItem {
   cuisine: string;
   image: string;
 }
-
-
-
 
 
 const HomePage: React.FC = () => {
@@ -270,6 +263,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff6f61',
     borderRadius: 16,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 30, height: 2 },
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   },
   promoContent: {
     flex: 1,

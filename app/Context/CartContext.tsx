@@ -24,20 +24,38 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+// CartProvider: A context provider component to manage the shopping cart items.
 export function CartProvider({ children }: { children: ReactNode }) {
+  // State to store the list of cart items
   const [items, setItems] = useState<CartItem[]>([]);
 
+  /**
+   * Adds an item to the cart. 
+   * - If the item already exists in the cart, increment its quantity.
+   * - If the item doesn't exist, add it to the cart with a quantity of 1.
+   * @param item - The item to add to the cart (of type FoodItem).
+   */
   const addItem = (item: FoodItem) => {
     setItems(currentItems => {
+      // Check if the item already exists in the cart
       const existingItem = currentItems.find(i => i.id === item.id);
+
       if (existingItem) {
+        // If the item exists, update its quantity
         return currentItems.map(i =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === item.id
+            ? { ...i, quantity: i.quantity + 1 } // Increment quantity
+            : i // Keep other items unchanged
         );
       }
+
+      // If the item doesn't exist, add it with an initial quantity of 1
       return [...currentItems, { ...item, quantity: 1 }];
     });
   };
+
+  // Return the provider with the cart context (not shown in this snippet)
+
 
   const updateQuantity = (itemId: string, increment: number) => {
     setItems(currentItems => {
