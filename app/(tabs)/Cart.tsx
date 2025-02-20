@@ -11,20 +11,28 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../Context/CartContext';
 import { Stack } from 'expo-router';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
 
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  cuisine: string;
-  image: string;
-}
+interface FoodItem {
+    itemid: number;
+    vendorname: string;
+    itemname: string;
+    price: number;
+    category: string;
+    veg: boolean;
+    image: string;
+    description: string;
+  }
+  
+  interface CartItem extends FoodItem {
+    quantity: number;
+  }
+  
 
 export default function MyCart() {
   const { items, updateQuantity, removeItem, getTotalPrice } = useCart();
 
-  const handleRemoveItem = (id: string): void => {
+  const handleRemoveItem = (itemid: number): void => {
     Alert.alert(
       "Remove Item",
       "Are you sure you want to remove this item?",
@@ -36,7 +44,7 @@ export default function MyCart() {
         { 
           text: "Remove", 
           onPress: () => {
-            removeItem(id);
+            removeItem(itemid);
           },
           style: "destructive"
         }
@@ -56,21 +64,21 @@ export default function MyCart() {
       
       <TouchableOpacity 
         style={styles.deleteButton}
-        onPress={() => handleRemoveItem(item.id)}
+        onPress={() => handleRemoveItem(item.itemid)}
       >
-        <Ionicons name="close-circle" size={24} color="#FF5722" />
+        <Ionicons name="close-circle" size={24} color="#ff6f61" />
       </TouchableOpacity>
       
       <View style={styles.itemDetails}>
-        <Text style={styles.itemName}>{item.name}</Text>
-        <Text style={styles.itemCuisine}>{item.cuisine}</Text>
+        <Text style={styles.itemName}>{item.itemname}</Text>
+        {/* <Text style={styles.itemCuisine}>{item.cuisine}</Text> */}
         <Text style={styles.itemPrice}>₹{(item.price * item.quantity).toFixed(2)}</Text>
       </View>
       
       <View style={styles.quantityContainer}>
         <TouchableOpacity 
           style={styles.quantityButton}
-          onPress={() => updateQuantity(item.id, -1)}
+          onPress={() => updateQuantity(item.itemid, -1)}
         >
           <Text style={styles.quantityButtonText}>-</Text>
         </TouchableOpacity>
@@ -79,7 +87,7 @@ export default function MyCart() {
         
         <TouchableOpacity 
           style={styles.quantityButton}
-          onPress={() => updateQuantity(item.id, 1)}
+          onPress={() => updateQuantity(item.itemid, 1)}
         >
           <Text style={styles.quantityButtonText}>+</Text>
         </TouchableOpacity>
@@ -108,7 +116,7 @@ export default function MyCart() {
             <FlatList
               data={items}
               renderItem={renderItem}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => item.itemid.toString()}
               contentContainerStyle={styles.listContainer}
               showsVerticalScrollIndicator={false}
             />
@@ -171,8 +179,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    zIndex: 1,
-  },
+    zIndex: 4,
+    elevation: 40,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    },
   itemDetails: {
     flex: 1,
     marginRight: 10,
@@ -243,7 +255,7 @@ const styles = StyleSheet.create({
   totalAmount: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FF5722',
+    color: '#FF6f61',
   },
   checkoutButton: {
     flexDirection: 'row',

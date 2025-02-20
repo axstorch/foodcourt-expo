@@ -40,11 +40,11 @@ const HomePage: React.FC = () => {
     // const { items, addItem, updateQuantity } = useCart();
     const router = useRouter();
     const handleMenuPress = () => {
-      router.push(`/Foodcourt_menu/Menu`);
+      router.push('../VendorPage');
     };
 
     const handleVendorPress = (vendor: string) => {
-      router.push(`/Foodcourt_menu/Menu`);
+      router.push('/Menu');
     };
 
 
@@ -68,42 +68,35 @@ const HomePage: React.FC = () => {
       name: 'KIIT University Food Court',
       vendors: ['(Mech)FoodCourt-17', 'FoodCourt-21', 'FoodCourt-33,', 'FoodCourt-21', 'Foodcourt-66 '],
       distance: '0.2 km',
-      rating: 4.5,
-      image: require('../../assets/images/NewNoodlespng.png')
+      rating: 3.8,
+      image: require('../../assets/images/FoodCourt_6.jpg')
        
       },
       {
         id: '2',
-        name: 'KIIT Road Food Court',
+        name: 'KIIT Roadside',
         vendors: ['Burnt', 'MahaMaya Faluda'],
-        distance: '1.5 km',
-        rating: 4.2,
-        image: require('../../assets/images/panipuri.png')
+        distance: '0.5 m',
+        rating: 3.9,
+        image: require('../../assets/images/KIIT_road.jpg')
       },
       {
         id: '3',
         name: 'Esplanade Mall Food Court',
         vendors: ['KFC', 'Pizza Hut'],
-        distance: '3.2 km',
-        rating: 3.8,
-        image: require('../../assets/images/Burgerplatter.png')
+        distance: '7.6 km',
+        rating: 4.2,
+        image: require('../../assets/images/EsplanadeMall.jpg')
       },
       {
         id: '4',
-        name: 'Central Park Food Plaza',
+        name: "Crystal Crown A'la carte",
         vendors: ['Burger King', 'Subway'],
-        distance: '2.1 km',
-        rating: 4.0,
-        image: require('../../assets/images/Dosa.png')
+        distance: '2.7 km',
+        rating: 4.6,
+        image: require('../../assets/images/Urban_canteen.jpg')
       },
-      {
-        id: '5',
-        name: 'Beachside Bites',
-        vendors: ['Seafood Shack', 'Taco Stand'],
-        distance: '5.7 km',
-        rating: 4.7,
-        image: require('../../assets/images/fish.png')
-      },
+
       
   ];
 
@@ -116,7 +109,6 @@ const HomePage: React.FC = () => {
         </TouchableOpacity> */}
         <View>
           <Text style={styles.headerTitle}>FoodCourt</Text>
-          <Text style={styles.headerSubtitle}></Text>
         </View>
         
       </View>
@@ -163,7 +155,7 @@ const HomePage: React.FC = () => {
               <TouchableOpacity key={FoodItem.id} style={styles.FoodItem}
               >
                 
-                <Image             source={
+                <Image source={
                              typeof FoodItem.image === 'string'
                                ? { uri: FoodItem.image }
                                : FoodItem.image
@@ -233,15 +225,16 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   headerTitle: {
+    paddingTop: 20,
     fontSize: 30,
     fontWeight: 'bold',
     color: '#ff6f61',
   },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
+  // headerSubtitle: {
+  //   fontSize: 16,
+  //   color: '#666',
+  //   textAlign: 'center',
+  // },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -262,11 +255,12 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#ff6f61',
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: Platform.OS === 'ios' ? 'visible' : 'hidden',
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 30, height: 2 },
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 2, height: 2 },
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    elevation: 4,
   },
   promoContent: {
     flex: 1,
@@ -283,6 +277,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     alignSelf: 'flex-start',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 2, height: 2 },
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   },
   orderButtonText: {
     color: '#fff',
@@ -297,8 +295,8 @@ const styles = StyleSheet.create({
     borderColor: 'white', // Border color
     overflow: 'hidden', // Ensures the border is applied within the rounded corners
     // padding: 0, // Padding between the image and border
-    resizeMode:'contain'
-
+    resizeMode:'contain',
+    elevation: 5,
   },
   sectionContainer: {
     marginBottom: 24,
@@ -331,6 +329,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     borderRadius: 25,
     marginBottom: 8,
+    elevation: 0,
   },
   FoodName: {
     fontSize: 14,
@@ -338,21 +337,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   discountGrid: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   discountCard: {
+    color: '#fff',
     marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
-
   //this is for the menu images:
   discountImage: {
-    width: '55%',
+    width: '100%',
     height: 200,
-    borderRadius: 12,
+    flexDirection: 'row',
+    alignContent: 'center',
+    //borderRadius: 12,
     marginBottom: 8,
-    marginLeft: 80,
-    resizeMode: 'contain'
-
+    elevation: 0,
+    resizeMode: 'cover',
   },
   discountInfo: {
     paddingHorizontal: 4,

@@ -1,47 +1,134 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '../Context/CartContext';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, FlatList, ActivityIndicator, Platform, ImageBackground } from 'react-native';
+import { useRouter, Stack } from 'expo-router';
+import supabase from '../../supabase';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useLocalSearchParams } from "expo-router";
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import * as SplashScreen from 'expo-splash-screen';
+
+
 
 interface FoodItem {
-  id: string;
-  name: string;
-  price: number;
-  cuisine: string;
+  itemid: number;
+  vendorname: string;
+  itemname: string;
+  price: number; 
+  category: string;
+  veg: boolean;
   image: string;
-  ratings?: number;
-  numRatings?: number;
+  description: string;
 }
 interface CartItem extends FoodItem {
   quantity: number;
 }
 
-const foodItems = [
-  { id: '1', name: 'Java Chip Frappuccino', price: 305, cuisine: 'Beverages', image: require('../../assets/images/Coffee.png'), ratings: 4.5, numRatings: 110 },
-  { id: '2', name: 'New York Cheesecake', price: 395, cuisine: 'Desserts', image: require('../../assets/images/Cheesecake.png'), ratings: 4.5, numRatings: 35 },
-  { id: '3', name: 'Dairy Milk', price: 9.99, cuisine: 'Snacks', image: require('../../assets/images/Dairymilk.png') },
-  { id: '4', name: 'Patties', price: 14.99, cuisine: 'Western', image: require('../../assets/images/Patties.png') },
-  { id: '5', name: 'Tea', price: 10.99, cuisine: 'Beverages', image: require('../../assets/images/Tea.png') },
-  { id: '6', name: 'Pizza', price: 11.99, cuisine: 'Western', image: require('../../assets/images/Pizza.png') },
-  { id: '7', name: 'Chhole Bhature', price: 13.99, cuisine: 'Indian', image: require('../../assets/images/ChholeBhature.png') },
-  { id: '8', name: 'Chicken chowmein', price: 9.99, cuisine: 'Chinese', image: require('../../assets/images/ChickChowmein.png') },
-];
 
-const cuisines = ['All', 'Western', 'Indian', 'Chinese', 'Beverages', 'Desserts', 'Snacks' ];
 
 export default function Menu() {
+  const { vendorid = null } = useLocalSearchParams(); // Get vendorId from params
   const router = useRouter();
-  
+  const [loading, setLoading] = useState(true);
+  const [foodItem, setFoodItem] = useState<FoodItem[]>([]);  
   const [selectedCuisine, setSelectedCuisine] = useState('All');
   const { items, addItem, updateQuantity } = useCart();
 
-  const filteredItems = selectedCuisine === 'All' 
-    ? foodItems 
-    : foodItems.filter(item => item.cuisine === selectedCuisine);
+  useEffect(() => {
+    let mounted = true;
 
-  const getItemQuantity = (itemId: string) => {
-    const item = items.find(item => item.id === itemId);
+    const prepare = async () => {
+      try {
+        await SplashScreen.preventAutoHideAsync();
+        if (vendorid) {
+          await fetchFood();
+        } else {
+          router.push("../+not-found");
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (mounted) {
+          await SplashScreen.hideAsync();
+        }
+      }
+    };
+
+    prepare();
+    return () => {
+      mounted = false;
+    };
+  }, [vendorid]);
+  
+  // Function to fetch items from Supabase
+  const fetchFood = async () => {
+    //  setLoading(true); // Start the loading spinner
+
+    try {
+      const { data, error } = await supabase
+        .from("menu") // Replace 'food_items' with your table name
+        
+        //vendors:vendors!menu_vendorid_fkey(vendorid, name), is used to specify the foreign key relationship that needs to be used 
+        //cause menu and vendor has 2 foreign relationship. and they are cyclic. so we need to specify the foreign key relationship 
+       
+        .select(` 
+          isavailable,
+          vendors:vendors!menu_vendorid_fkey(vendorid,name),  
+          items: items(itemid,
+          itemname,
+          description,
+          price,
+          image,
+          veg)
+        `)
+        .eq('vendorid', vendorid);
+  
+      if (error) {
+        console.error('Error fetching items:', error);
+        return;
+      }
+      if(data.length === 0){
+        //setLoading(false);
+        router.replace('../+not-found');
+        return;
+      }
+      const transformedItems: FoodItem[] = data.map((item: any) => ({
+        itemid: item.items?.itemid,
+        vendorname: item.vendors?.name || "Unknown Vendor :(",
+        itemname: item.items?.itemname || "Unknown Item",
+        price: item.items?.price || 0,
+        category: item.categories?.categoryname || "Uncategorized",
+        veg: item.items?.veg || false,
+        image: item.items?.image || "",
+        description: item.items?.description || "No description available"
+      }));
+  
+      setFoodItem(transformedItems); // Store retrieved items in state
+  
+    } catch (err) {
+      router.push("../+not-found");
+    } finally {
+      setLoading(false)
+     // Stop the loading spinner
+    }
+  };
+  
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <ActivityIndicator size="large" color="#0000ff" />
+    </View>
+    );
+    
+  }
+  
+  const filteredItems = selectedCuisine === 'All' 
+    ? foodItem 
+    : foodItem.filter(item => item.category === selectedCuisine);
+
+  const getItemQuantity = (itemId: number) => {
+    const item = items.find(item => item.itemid === itemId);
     return item ? item.quantity : 0;
   };
 
@@ -49,7 +136,7 @@ export default function Menu() {
     addItem(item);
   };
 
-  const handleUpdateQuantity = (itemId: string, increment: number) => {
+  const handleUpdateQuantity = (itemId: number, increment: number) => {
     updateQuantity(itemId, increment);
   };
 
@@ -63,8 +150,9 @@ export default function Menu() {
         options={{
           headerShown: true,
           headerTitle: "Menu",
+          headerTitleAlign: 'center',
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
+            <TouchableOpacity onPress={() => router.back()} style ={{ paddingLeft: 10, elevation: 3}}>
               <MaterialIcons name="arrow-back" size={24} color="#fff" />
             </TouchableOpacity>
           ),
@@ -93,7 +181,7 @@ export default function Menu() {
       <View style={styles.container}>
         <View style={styles.promoContainer}>
           <Text style={styles.promoText}>20% OFF upto ₹50</Text>
-          <Text style={styles.promoSubtext}>Use code LOMDA | above 200</Text>
+          <Text style={styles.promoSubtext}>Use code BRYAN | above 200</Text>
         </View>
         <View style={styles.cuisineFilterWrapper}>
         <ScrollView 
@@ -101,7 +189,7 @@ export default function Menu() {
           showsHorizontalScrollIndicator={false} 
           contentContainerStyle={styles.cuisineFilter}
         >
-          {cuisines.map((cuisine) => (
+          {/* {cuisines.map((cuisine) => (
             <TouchableOpacity
               key={cuisine}
               style={[
@@ -117,27 +205,34 @@ export default function Menu() {
                 {cuisine}
               </Text>
             </TouchableOpacity>
-          ))}
+          ))} */}
         </ScrollView>
         </View>
 
         <ScrollView style={styles.menuList}>
-          {filteredItems.map((item) => (
-            <View key={item.id} style={styles.menuItem}>
+          {filteredItems.map((item: FoodItem) => (
+            <View key={item.itemid} style={styles.menuItem}>
               <View style={styles.itemInfo}>
-                <MaterialIcons name="verified" size={16} color="#388e3c" style={styles.verifiedIcon} />
-                <Text style={styles.itemName}>{item.name}</Text>
-                {item.ratings && (
+                     {item.veg && (
+                      <MaterialCommunityIcons name="square-circle" size={16} color="green" />                   
+                    )}
+
+                    {!item.veg && (
+                      <MaterialCommunityIcons name="square-circle" size={16} color="red" />                   
+                    )}
+
+                <Text style={styles.itemName}>{item.itemname}</Text>
+                {/* {item.ratings && (
                   <View style={styles.ratingContainer}>
                     <MaterialIcons name="star" size={16} color="#ffd700" />
                     <Text style={styles.ratingText}>{item.ratings}</Text>
                     <Text style={styles.ratingCount}>({item.numRatings} ratings)</Text>
                   </View>
-                )}
+                )} */}
                 <Text style={styles.itemPrice}>₹{item.price}</Text>
                 <Text style={styles.itemDescription} numberOfLines={2}>
-                  We blend mocha sauce and Frappuccino chips with roast coffee and milk and ice, then top...
-                </Text>
+                  {item.description}
+                   </Text>
               </View>
               <View style={styles.imageContainer}>
                 <Image 
@@ -149,12 +244,12 @@ export default function Menu() {
                   style={styles.itemImage}
                 />
                 <View style={styles.quantityContainer}>
-                  {getItemQuantity(item.id) > 0 && (
+                  {getItemQuantity(item.itemid) > 0 && (
                     <>
-                      <TouchableOpacity onPress={() => handleUpdateQuantity(item.id, -1)} style={styles.quantityButton}>
+                      <TouchableOpacity onPress={() => handleUpdateQuantity(item.itemid, -1)} style={styles.quantityButton}>
                         <MaterialIcons name="remove" size={20} color="#ff6f61" />
                       </TouchableOpacity>
-                      <Text style={styles.quantityText}>{getItemQuantity(item.id)}</Text>
+                      <Text style={styles.quantityText}>{getItemQuantity(item.itemid)}</Text>
                     </>
                   )}
                   <TouchableOpacity onPress={() => handleAddToCart(item)} style={styles.addButton}>
@@ -171,6 +266,11 @@ export default function Menu() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
@@ -188,10 +288,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+
+  //for cuisine filter, once implemented, update the height!
   cuisineFilterWrapper: {
-  height: 60,
+  height: 0,
   backgroundColor: '#fff',
-  borderBottomWidth: 1,
+  borderBottomWidth: 0,
   borderBottomColor: '#eee',
   },
   
@@ -220,12 +322,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   menuList: {
-    padding: 15,
+    padding: 16,
   },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },

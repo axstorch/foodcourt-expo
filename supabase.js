@@ -1,14 +1,23 @@
-// supabase.js
 import { createClient } from '@supabase/supabase-js';
-//import { SUPABASE_URL , SUPABASE_KEY } from '@env';
-import Constants from 'expo-constants';
+import  Constants  from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+//import 'react-native-url-polyfill/auto';
 
-const { SUPABASE_URL, SUPABASE_KEY } = Constants.expoConfig.extra;
+// when using keys from supabase, use EXPO_PUBLIC_ prefix
 
-// Replace with your Supabase project credentials
-const supabaseUrl = SUPABASE_URL; // Found in your Supabase dashboard
-const supabaseKey = SUPABASE_KEY; // Found in the API section your Supabase dashboard
+const SUPABASE_URL=Constants.expoConfig.extra.SUPABASE_URL;
+const SUPABASE_KEY=Constants.expoConfig.extra.SUPABASE_KEY;
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY,
+    {
+        auth: {
+            storage: AsyncStorage,
+            autoRefreshToken: true,
+            persistSession: Platform.OS !== 'web', // Disable persistSession for web
+            detectSessionInUrl: false, // Prevent issues with URL detection on web
+          },
+    }
+);
 
 export default supabase;

@@ -20,7 +20,7 @@ const CourtDetails = () => {
   const isOpen = params.isOpen === 'true';
 
   const handleVendorPress = (vendor: string) => {
-    router.push(`/Foodcourt_menu/Menu`);
+    router.push(`/Menu`);
   };
 
   const renderRatingStars = (rating: number) => {
