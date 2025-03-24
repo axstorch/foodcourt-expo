@@ -1,9 +1,9 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   FlatList,
   Alert,
   Image
@@ -12,39 +12,43 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../Context/CartContext';
 import { Stack } from 'expo-router';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
+import { router } from 'expo-router';
 
 interface FoodItem {
-    itemid: number;
-    vendorname: string;
-    itemname: string;
-    price: number;
-    category: string;
-    veg: boolean;
-    image: string;
-    description: string;
-  }
-  
-  interface CartItem extends FoodItem {
-    quantity: number;
-  }
-  
+  item_id: number;
+  vendor_name: string;
+  item_name: string;
+  price: number;
+  category: string;
+  veg: boolean;
+  image: string;
+  description: string;
+}
+
+interface CartItem extends FoodItem {
+  quantity: number;
+}
+
+const handlepaymentpage = () => {
+  router.replace('../payment');
+}
 
 export default function MyCart() {
   const { items, updateQuantity, removeItem, getTotalPrice } = useCart();
 
-  const handleRemoveItem = (itemid: number): void => {
+  const handleRemoveItem = (item_id: number): void => {
     Alert.alert(
       "Remove Item",
       "Are you sure you want to remove this item?",
       [
-        { 
-          text: "Cancel", 
-          style: "cancel" 
+        {
+          text: "Cancel",
+          style: "cancel"
         },
-        { 
-          text: "Remove", 
+        {
+          text: "Remove",
           onPress: () => {
-            removeItem(itemid);
+            removeItem(item_id);
           },
           style: "destructive"
         }
@@ -54,40 +58,40 @@ export default function MyCart() {
 
   const renderItem = ({ item }: { item: CartItem }) => (
     <View style={styles.itemContainer}>
-       <Image             source={
-                    typeof item.image === 'string'
-                      ? { uri: item.image }
-                      : item.image
-                  }
-                  style={styles.itemImage}
-                />
-      
-      <TouchableOpacity 
+      <Image source={
+        typeof item.image === 'string'
+          ? { uri: item.image }
+          : item.image
+      }
+        style={styles.itemImage}
+      />
+
+      <TouchableOpacity
         style={styles.deleteButton}
-        onPress={() => handleRemoveItem(item.itemid)}
+        onPress={() => handleRemoveItem(item.item_id)}
       >
         <Ionicons name="close-circle" size={24} color="#ff6f61" />
       </TouchableOpacity>
-      
+
       <View style={styles.itemDetails}>
-        <Text style={styles.itemName}>{item.itemname}</Text>
+        <Text style={styles.itemName}>{item.item_name}</Text>
         {/* <Text style={styles.itemCuisine}>{item.cuisine}</Text> */}
         <Text style={styles.itemPrice}>₹{(item.price * item.quantity).toFixed(2)}</Text>
       </View>
-      
+
       <View style={styles.quantityContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.quantityButton}
-          onPress={() => updateQuantity(item.itemid, -1)}
+          onPress={() => updateQuantity(item.item_id, -1)}
         >
           <Text style={styles.quantityButtonText}>-</Text>
         </TouchableOpacity>
-        
+
         <Text style={styles.quantityText}>{item.quantity}</Text>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.quantityButton}
-          onPress={() => updateQuantity(item.itemid, 1)}
+          onPress={() => updateQuantity(item.item_id, 1)}
         >
           <Text style={styles.quantityButtonText}>+</Text>
         </TouchableOpacity>
@@ -97,7 +101,7 @@ export default function MyCart() {
 
   return (
     <>
-      <Stack.Screen 
+      <Stack.Screen
         options={{
           headerShown: true,
           headerTitle: "My Cart",
@@ -108,7 +112,7 @@ export default function MyCart() {
           headerTitleStyle: {
             fontWeight: 'bold',
           },
-        }} 
+        }}
       />
       <View style={styles.container}>
         {items.length > 0 ? (
@@ -116,7 +120,7 @@ export default function MyCart() {
             <FlatList
               data={items}
               renderItem={renderItem}
-              keyExtractor={(item) => item.itemid.toString()}
+              keyExtractor={(item) => item.item_id.toString()}
               contentContainerStyle={styles.listContainer}
               showsVerticalScrollIndicator={false}
             />
@@ -127,9 +131,8 @@ export default function MyCart() {
                 <Text style={styles.totalAmount}>₹{getTotalPrice().toFixed(2)}</Text>
               </View>
 
-              <TouchableOpacity 
+              <TouchableOpacity onPress={handlepaymentpage}
                 style={styles.checkoutButton}
-                onPress={() => Alert.alert('Success', 'Proceeding to checkout!')}
               >
                 <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
                 <Ionicons name="arrow-forward" size={24} color="#FFF" />
@@ -184,7 +187,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    },
+  },
   itemDetails: {
     flex: 1,
     marginRight: 10,

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Alert, ImageBackground, Image } from 'react-native';
-import supabase from '../../supabase'; // Import your Supabase client
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Alert, ImageBackground, Image, Pressable } from 'react-native';
+import supabase from '../../supabase';
 import { router } from 'expo-router';
 import { Keyboard } from 'react-native';
 import { BlurView } from 'expo-blur';
-import EvilIcons from '@expo/vector-icons/EvilIcons';
 
+// RegisterWithOTP Component
 const RegisterWithOTP = () => {
   const [email, setEmail] = useState('');
   const [number, setNumber] = useState('');
@@ -13,10 +13,12 @@ const RegisterWithOTP = () => {
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState('');
   const [cnfrmpassword, setCnfrmPassword] = useState('');
+  const [name, Setname] = useState('');
 
   const handleback = () => {
     router.replace('../index');
   }
+
 
   const handleSubmit = async () => {
 
@@ -27,7 +29,28 @@ const RegisterWithOTP = () => {
           email: email,
           password: password,
         });
-        setIsMailSent(true);
+
+
+        // Step 2: Insert user details into "customer_details" table
+        const userId = data.user?.id; // Get the user ID from Supabase Auth
+        if (!userId) throw new Error('User ID not found.');
+
+        console.log('User ID:', userId);
+
+        const { data: customerData, error: customerError } = await supabase
+          .from('customer_details')
+          .insert([
+            {
+              user_id: userId, // Link to Supabase Auth user ID
+              email,
+              phonenumber: number,
+              full_name: name,
+            },
+          ])
+          .select();
+
+        if (customerError) throw customerError;
+
 
         if (error) throw error;
         console.log('Thanks for Signing Up!:', data);
@@ -37,7 +60,7 @@ const RegisterWithOTP = () => {
       }
       finally {
         setLoading(false);
-        router.push('../index');
+        // router.push('../index');
       }
 
     }
@@ -50,9 +73,9 @@ const RegisterWithOTP = () => {
 
   return (
 
-    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+    <Pressable onPress={() => Keyboard.dismiss()}>
       <ImageBackground style={styles.container} source={require('../../assets/images/HomeBG.jpg')} resizeMode='cover'>
-        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+        <Pressable onPress={() => Keyboard.dismiss()}>
           <BlurView intensity={100} experimentalBlurMethod='none' tint='default' style={{ backgroundColor: 'rgba(236, 228, 228, 0.75)', padding: 20, borderRadius: 25, overflow: 'hidden', width: '100%', alignSelf: 'center' }}>
             <Image source={require('../../assets/images/Logo.png')} style={styles.topImage} />
             <Text style={styles.dancingScriptFont}>Order fast, make it last</Text>
@@ -65,6 +88,9 @@ const RegisterWithOTP = () => {
               onChangeText={(text) => setEmail(text.trim())}
               keyboardType="email-address"
             />
+
+            <Text style={{ marginBottom: 10, marginTop: -8, marginHorizontal: 8, color: 'gray', fontWeight: 'light', fontStyle: 'italic', fontSize: 12, textAlign: 'right' }}>*Use university Email ID only</Text>
+
             {/* Password Input */}
             <TextInput
               style={styles.input}
@@ -90,6 +116,14 @@ const RegisterWithOTP = () => {
               keyboardType='phone-pad'
             />
 
+            {/* Name Input */}
+            <TextInput
+              style={styles.input}
+              placeholder="Name"
+              value={name}
+              onChangeText={Setname}
+            />
+
             {/* Send or Verify Button */}
             <TouchableOpacity
               style={styles.button}
@@ -110,9 +144,9 @@ const RegisterWithOTP = () => {
             </View>
 
           </BlurView>
-        </TouchableWithoutFeedback>
+        </Pressable>
       </ImageBackground>
-    </TouchableWithoutFeedback>
+    </Pressable>
   );
 };
 

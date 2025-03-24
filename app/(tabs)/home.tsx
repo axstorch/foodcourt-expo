@@ -13,14 +13,14 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCart } from '../Context/CartContext';  // Use relative path
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import  supabase  from '../../supabase.js';  // Use relative path
+import supabase from '../../supabase.js';  // Use relative path
 import { createClient } from '@supabase/supabase-js';
 
 
 interface FoodCourt {
   id: string;
   name: string;
-  vendors : string[]; 
+  vendors: string[];
   distance: string;
   rating: number;
   image: string;
@@ -37,15 +37,15 @@ interface FoodItem {
 
 const HomePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
-    // const { items, addItem, updateQuantity } = useCart();
-    const router = useRouter();
-    const handleMenuPress = () => {
-      router.push('../VendorPage');
-    };
+  // const { items, addItem, updateQuantity } = useCart();
+  const router = useRouter();
+  const handleMenuPress = () => {
+    router.push('../VendorPage');
+  };
 
-    const handleVendorPress = (vendor: string) => {
-      router.push('/Menu');
-    };
+  const handleVendorPress = (vendor: string) => {
+    router.push('/Menu');
+  };
 
 
   const foodItems: FoodItem[] = [
@@ -55,12 +55,12 @@ const HomePage: React.FC = () => {
     { id: '4', name: 'Patties', price: 14.99, cuisine: 'Western', image: require('../../assets/images/Patties.png') },
     { id: '5', name: 'Tea', price: 10.99, cuisine: 'Beverages', image: require('../../assets/images/Tea.png') },
     // { id: '6', name: 'Pizza', price: 11.99, cuisine: 'Western', image: require('../../assets/images/Pizza.png') },
-     { id: '7', name: 'Chhole Bhature', price: 13.99, cuisine: 'Indian', image: require('../../assets/images/ChholeBhature.png') },
+    { id: '7', name: 'Chhole Bhature', price: 13.99, cuisine: 'Indian', image: require('../../assets/images/ChholeBhature.png') },
     { id: '8', name: 'Chicken chowmein', price: 9.99, cuisine: 'Chinese', image: require('../../assets/images/ChickChowmein.png') },
     { id: '9', name: 'Pasta', price: 9.99, cuisine: 'Italian', image: require('../../assets/images/pasta.png') },
 
   ];
-  
+
 
   const foodcourt: FoodCourt[] = [
     {
@@ -68,36 +68,10 @@ const HomePage: React.FC = () => {
       name: 'KIIT University Food Court',
       vendors: ['(Mech)FoodCourt-17', 'FoodCourt-21', 'FoodCourt-33,', 'FoodCourt-21', 'Foodcourt-66 '],
       distance: '0.2 km',
-      rating: 3.8,
+      rating: 4.3,
       image: require('../../assets/images/FoodCourt_6.jpg')
-       
-      },
-      {
-        id: '2',
-        name: 'KIIT Roadside',
-        vendors: ['Burnt', 'MahaMaya Faluda'],
-        distance: '0.5 m',
-        rating: 3.9,
-        image: require('../../assets/images/KIIT_road.jpg')
-      },
-      {
-        id: '3',
-        name: 'Esplanade Mall Food Court',
-        vendors: ['KFC', 'Pizza Hut'],
-        distance: '7.6 km',
-        rating: 4.2,
-        image: require('../../assets/images/EsplanadeMall.jpg')
-      },
-      {
-        id: '4',
-        name: "Crystal Crown A'la carte",
-        vendors: ['Burger King', 'Subway'],
-        distance: '2.7 km',
-        rating: 4.6,
-        image: require('../../assets/images/Urban_canteen.jpg')
-      },
 
-      
+    }
   ];
 
   return (
@@ -110,7 +84,7 @@ const HomePage: React.FC = () => {
         <View>
           <Text style={styles.headerTitle}>FoodCourt</Text>
         </View>
-        
+
       </View>
 
       {/* Search Bar */}
@@ -130,14 +104,14 @@ const HomePage: React.FC = () => {
         <View style={styles.promoBanner}>
           <View style={styles.promoContent}>
             <Text style={styles.promoTitle}>Can't study?{'\n'}Growling Tummy?{'\n'}Why wait?</Text>
-            <TouchableOpacity  onPress={() => handleMenuPress()}
-            style={styles.orderButton}>
+            <TouchableOpacity onPress={() => handleMenuPress()}
+              style={styles.orderButton}>
 
               <Text style={styles.orderButtonText}>Order now</Text>
             </TouchableOpacity>
           </View>
           <Image
-            source={require('../../assets/images/ChickenBiryani.png') }
+            source={require('../../assets/images/ChickenBiryani.png')}
             style={styles.promoImage}
           />
         </View>
@@ -154,15 +128,15 @@ const HomePage: React.FC = () => {
             {foodItems.map((FoodItem) => (
               <TouchableOpacity key={FoodItem.id} style={styles.FoodItem}
               >
-                
+
                 <Image source={
-                             typeof FoodItem.image === 'string'
-                               ? { uri: FoodItem.image }
-                               : FoodItem.image
-                           }
-                           style = {styles.FoodIcon}
-                           
-                           />
+                  typeof FoodItem.image === 'string'
+                    ? { uri: FoodItem.image }
+                    : FoodItem.image
+                }
+                  style={styles.FoodIcon}
+
+                />
                 <Text style={styles.FoodName}>{FoodItem.cuisine}</Text>
               </TouchableOpacity>
             ))}
@@ -179,18 +153,18 @@ const HomePage: React.FC = () => {
           </View>
           <View style={styles.discountGrid}>
             {foodcourt.map((FoodCourt) => (
-              <TouchableOpacity 
-              onPress={() => handleMenuPress()}
-              key={FoodCourt.id} style={styles.discountCard}>
-        
-                <Image source= {
-                             typeof FoodCourt.image === 'string'
-                               ? { uri: FoodCourt.image }
-                               : FoodCourt.image
-                           }
-                           style = {styles.discountImage}
+              <TouchableOpacity
+                onPress={() => handleMenuPress()}
+                key={FoodCourt.id} style={styles.discountCard}>
 
-                           />
+                <Image source={
+                  typeof FoodCourt.image === 'string'
+                    ? { uri: FoodCourt.image }
+                    : FoodCourt.image
+                }
+                  style={styles.discountImage}
+
+                />
                 <View style={styles.discountInfo}>
                   <Text style={styles.FoodCourtName}>{FoodCourt.name}</Text>
                   <View style={styles.FoodCourtDetails}>
@@ -295,7 +269,7 @@ const styles = StyleSheet.create({
     borderColor: 'white', // Border color
     overflow: 'hidden', // Ensures the border is applied within the rounded corners
     // padding: 0, // Padding between the image and border
-    resizeMode:'contain',
+    resizeMode: 'contain',
     elevation: 5,
   },
   sectionContainer: {

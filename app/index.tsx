@@ -1,20 +1,31 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ImageBackground, TouchableWithoutFeedback, } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ImageBackground, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { Keyboard } from 'react-native';
 import supabase from '../supabase';
+import { useAuth } from './Context/AuthContext';
+
+
 
 const SignIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
 
+  const { signIn, userToken, isLoading } = useAuth();
 
   const [fontsLoaded] = useFonts({
     Dancingscript: require('../assets/fonts/DancingScript-Regular.ttf'),
   });
+
+  useEffect(() => {
+
+    if (!isLoading && userToken) {
+      router.replace('/(tabs)/home');
+    }
+  }, [userToken, isLoading]);
 
   const handleSignIn = async () => {
     console.log('Sign In clicked');
@@ -27,19 +38,33 @@ const SignIn = () => {
 
       if (error) {
         console.error('Error signing in:', error.message);
-      } else {
-        console.log('Signed in successfully:', data);
-        router.push('./(tabs)/home');
+      }
+
+      if (data.session?.access_token) {
+        // Save token to context and AsyncStorage
+        await signIn(data.session.access_token);
+
+        router.replace('./(tabs)/home');
       }
     } catch (err) {
       console.error('Unexpected error:', err);
     }
   };
+
+
   const handleGoogleSignIn = () => {
     // Add Google sign-in logic here
     console.log('Google Sign-In clicked');
     router.push('./+not-found');
   };
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
@@ -56,7 +81,7 @@ const SignIn = () => {
               onChangeText={setEmail}
             />
 
-            <Text style={{ marginBottom: 16, marginTop: -8, marginHorizontal: 8, color: 'gray', fontWeight: 'light', fontStyle: 'italic', fontSize: 12, textAlign: 'right' }}>*Use university Email ID only</Text>
+            <Text style={{ marginBottom: 10, marginTop: -8, marginHorizontal: 8, color: 'gray', fontWeight: 'light', fontStyle: 'italic', fontSize: 12, textAlign: 'right' }}>*Use university Email ID only</Text>
 
             {/* Password Input */}
             <TextInput

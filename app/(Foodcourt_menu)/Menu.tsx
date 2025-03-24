@@ -11,10 +11,10 @@ import * as SplashScreen from 'expo-splash-screen';
 
 
 interface FoodItem {
-  itemid: number;
-  vendorname: string;
-  itemname: string;
-  price: number; 
+  item_id: number;
+  vendor_name: string;
+  item_name: string;
+  price: number;
   category: string;
   veg: boolean;
   image: string;
@@ -27,10 +27,10 @@ interface CartItem extends FoodItem {
 
 
 export default function Menu() {
-  const { vendorid = null } = useLocalSearchParams(); // Get vendorId from params
+  const { vendor_id = null } = useLocalSearchParams(); // Get vendorId from params
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [foodItem, setFoodItem] = useState<FoodItem[]>([]);  
+  const [foodItem, setFoodItem] = useState<FoodItem[]>([]);
   const [selectedCuisine, setSelectedCuisine] = useState('All');
   const { items, addItem, updateQuantity } = useCart();
 
@@ -40,7 +40,7 @@ export default function Menu() {
     const prepare = async () => {
       try {
         await SplashScreen.preventAutoHideAsync();
-        if (vendorid) {
+        if (vendor_id) {
           await fetchFood();
         } else {
           router.push("../+not-found");
@@ -58,77 +58,77 @@ export default function Menu() {
     return () => {
       mounted = false;
     };
-  }, [vendorid]);
-  
+  }, [vendor_id]);
+
   // Function to fetch items from Supabase
   const fetchFood = async () => {
     //  setLoading(true); // Start the loading spinner
 
     try {
       const { data, error } = await supabase
-        .from("menu") // Replace 'food_items' with your table name
-        
-        //vendors:vendors!menu_vendorid_fkey(vendorid, name), is used to specify the foreign key relationship that needs to be used 
+        .from("menu")
+
+        //vendors:vendors!menu_vendorid_fkey(vendor_id, name), is used to specify the foreign key relationship that needs to be used 
         //cause menu and vendor has 2 foreign relationship. and they are cyclic. so we need to specify the foreign key relationship 
-       
+
         .select(` 
-          isavailable,
-          vendors:vendors!menu_vendorid_fkey(vendorid,name),  
-          items: items(itemid,
-          itemname,
+          is_available,
+          vendors:vendors!menu_vendor_id_fkey(vendor_id,name),  
+          items: items(item_id,
+          item_name,
           description,
           price,
           image,
           veg)
         `)
-        .eq('vendorid', vendorid);
-  
+        .eq('vendor_id', vendor_id);
+
       if (error) {
         console.error('Error fetching items:', error);
         return;
       }
-      if(data.length === 0){
+      if (data.length === 0) {
         //setLoading(false);
         router.replace('../+not-found');
         return;
       }
       const transformedItems: FoodItem[] = data.map((item: any) => ({
-        itemid: item.items?.itemid,
-        vendorname: item.vendors?.name || "Unknown Vendor :(",
-        itemname: item.items?.itemname || "Unknown Item",
+        item_id: item.items?.item_id,
+        vendor_name: item.vendors?.vendor_name || "Unknown Vendor :(",
+        item_name: item.items?.item_name || "Unknown Item",
         price: item.items?.price || 0,
-        category: item.categories?.categoryname || "Uncategorized",
+        category: item.categories?.category || "Uncategorized",
         veg: item.items?.veg || false,
         image: item.items?.image || "",
         description: item.items?.description || "No description available"
       }));
-  
+
       setFoodItem(transformedItems); // Store retrieved items in state
-  
+
     } catch (err) {
       router.push("../+not-found");
     } finally {
       setLoading(false)
-     // Stop the loading spinner
+      // Stop the loading spinner
     }
   };
-  
+
 
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <ActivityIndicator size="large" color="#0000ff" />
-    </View>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
     );
-    
+
   }
-  
-  const filteredItems = selectedCuisine === 'All' 
-    ? foodItem 
+
+  const filteredItems = selectedCuisine === 'All'
+    ? foodItem
     : foodItem.filter(item => item.category === selectedCuisine);
 
-  const getItemQuantity = (itemId: number) => {
-    const item = items.find(item => item.itemid === itemId);
+  const getItemQuantity = (item_Id: number) => {
+    const item = items.find(item => item.item_id === item_Id);
     return item ? item.quantity : 0;
   };
 
@@ -146,19 +146,19 @@ export default function Menu() {
 
   return (
     <>
-      <Stack.Screen 
+      <Stack.Screen
         options={{
           headerShown: true,
           headerTitle: "Menu",
           headerTitleAlign: 'center',
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style ={{ paddingLeft: 10, elevation: 3}}>
+            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 10, elevation: 3 }}>
               <MaterialIcons name="arrow-back" size={24} color="#fff" />
             </TouchableOpacity>
           ),
           headerRight: () => (
-            <TouchableOpacity 
-              style={styles.goToCartButton} 
+            <TouchableOpacity
+              style={styles.goToCartButton}
               onPress={() => router.push('../Cart')}
             >
               <MaterialIcons name="shopping-cart" size={24} color="#fff" />
@@ -176,7 +176,7 @@ export default function Menu() {
           headerTitleStyle: {
             fontWeight: 'bold',
           },
-        }} 
+        }}
       />
       <View style={styles.container}>
         <View style={styles.promoContainer}>
@@ -184,12 +184,12 @@ export default function Menu() {
           <Text style={styles.promoSubtext}>Use code BRYAN | above 200</Text>
         </View>
         <View style={styles.cuisineFilterWrapper}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          contentContainerStyle={styles.cuisineFilter}
-        >
-          {/* {cuisines.map((cuisine) => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.cuisineFilter}
+          >
+            {/* {cuisines.map((cuisine) => (
             <TouchableOpacity
               key={cuisine}
               style={[
@@ -206,22 +206,22 @@ export default function Menu() {
               </Text>
             </TouchableOpacity>
           ))} */}
-        </ScrollView>
+          </ScrollView>
         </View>
 
         <ScrollView style={styles.menuList}>
           {filteredItems.map((item: FoodItem) => (
-            <View key={item.itemid} style={styles.menuItem}>
+            <View key={item.item_id} style={styles.menuItem}>
               <View style={styles.itemInfo}>
-                     {item.veg && (
-                      <MaterialCommunityIcons name="square-circle" size={16} color="green" />                   
-                    )}
+                {item.veg && (
+                  <MaterialCommunityIcons name="square-circle" size={16} color="green" />
+                )}
 
-                    {!item.veg && (
-                      <MaterialCommunityIcons name="square-circle" size={16} color="red" />                   
-                    )}
+                {!item.veg && (
+                  <MaterialCommunityIcons name="square-circle" size={16} color="red" />
+                )}
 
-                <Text style={styles.itemName}>{item.itemname}</Text>
+                <Text style={styles.item_Name}>{item.item_name}</Text>
                 {/* {item.ratings && (
                   <View style={styles.ratingContainer}>
                     <MaterialIcons name="star" size={16} color="#ffd700" />
@@ -232,10 +232,10 @@ export default function Menu() {
                 <Text style={styles.itemPrice}>₹{item.price}</Text>
                 <Text style={styles.itemDescription} numberOfLines={2}>
                   {item.description}
-                   </Text>
+                </Text>
               </View>
               <View style={styles.imageContainer}>
-                <Image 
+                <Image
                   source={
                     typeof item.image === 'string'
                       ? { uri: item.image }
@@ -244,12 +244,12 @@ export default function Menu() {
                   style={styles.itemImage}
                 />
                 <View style={styles.quantityContainer}>
-                  {getItemQuantity(item.itemid) > 0 && (
+                  {getItemQuantity(item.item_id) > 0 && (
                     <>
-                      <TouchableOpacity onPress={() => handleUpdateQuantity(item.itemid, -1)} style={styles.quantityButton}>
+                      <TouchableOpacity onPress={() => handleUpdateQuantity(item.item_id, -1)} style={styles.quantityButton}>
                         <MaterialIcons name="remove" size={20} color="#ff6f61" />
                       </TouchableOpacity>
-                      <Text style={styles.quantityText}>{getItemQuantity(item.itemid)}</Text>
+                      <Text style={styles.quantityText}>{getItemQuantity(item.item_id)}</Text>
                     </>
                   )}
                   <TouchableOpacity onPress={() => handleAddToCart(item)} style={styles.addButton}>
@@ -291,12 +291,12 @@ const styles = StyleSheet.create({
 
   //for cuisine filter, once implemented, update the height!
   cuisineFilterWrapper: {
-  height: 0,
-  backgroundColor: '#fff',
-  borderBottomWidth: 0,
-  borderBottomColor: '#eee',
+    height: 0,
+    backgroundColor: '#fff',
+    borderBottomWidth: 0,
+    borderBottomColor: '#eee',
   },
-  
+
   cuisineFilter: {
     paddingHorizontal: 12,
     flexDirection: 'row',
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   verifiedIcon: {
     marginBottom: 4,
   },
-  itemName: {
+  item_Name: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
