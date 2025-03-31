@@ -29,6 +29,8 @@ const SignIn = () => {
 
   const handleSignIn = async () => {
     console.log('Sign In clicked');
+    
+
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -50,6 +52,7 @@ const SignIn = () => {
       console.error('Unexpected error:', err);
     }
   };
+
 
 
   const handleGoogleSignIn = () => {

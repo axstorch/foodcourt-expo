@@ -30,7 +30,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        amount: amount * 100, // Convert to paise
+        amount: amount, // Convert to paise
         currency: currency || "INR",
         receipt: receipt || `receipt_${Date.now()}`,
         notes: { foodCourtId },

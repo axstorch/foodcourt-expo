@@ -1,23 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Button, Alert, StyleSheet, ActivityIndicator, TouchableOpacity, Text } from 'react-native';
 import RazorpayCheckout from '../../components/payments/Rzrpay';
-import { useRouter, Stack, router } from 'expo-router';
+import { router } from 'expo-router';
+import supabase from '../../supabase';
+import { useCart } from '../Context/CartContext';
 
 const PaymentScreen = () => {
     const [showPayment, setShowPayment] = useState(false);
     const [orderId, setOrderId] = useState('');
     const [loading, setLoading] = useState(false);
+    const [userId, setUserId] = useState<string | null>(null);
 
-    console.log("I am on");
+    const { items, getTotalPrice, clearCart } = useCart();
 
-    const amount = 90; // 
-    const rzrpayId = process.env.EXPO_PUBLIC_RZRPAY_KEY as string;
-    const proj_ref = process.env.EXPO_PUBLIC_PROJ_REF as string;
+    const amount = getTotalPrice() || 9000000000; // Fallback to 90 if cart is empty
+    const rzrpayId = process.env.EXPO_PUBLIC_RZRPAY_KEY || '';
+    const proj_ref = process.env.EXPO_PUBLIC_PROJ_REF;
+
+    // Get user ID on component mount
+    useEffect(() => {
+        const fetchUserId = async () => {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                setUserId(user?.id ?? null);
+            } catch (error) {
+                console.error('Error fetching user ID:', error);
+                Alert.alert('Authentication Error', 'Please log in again.');
+            }
+        };
+
+        fetchUserId();
+    }, []);
+
+    // Function to save cart items to database
+    const saveCartToDatabase = async () => {
+        if (!userId) {
+            Alert.alert('Error', 'User not authenticated');
+            return false;
+        }
+
+        if (items.length === 0) {
+            Alert.alert('Error', 'Your cart is empty');
+            return false;
+        }
+
+        // const { data, error } = await supabase
+        //         .from("cartitems_dynamic")
+        //         .insert(
+        //             items.map((item) => ({
+        //                 //customerid: userId,
+        //                 itemid: item.item_id,
+        //                 price: item.price,
+        //                 quantity: item.quantity,
+        //             }))
+        //         );
+
+
+        try {
+            const { data, error } = await supabase.rpc('insert_order_with_items', {
+                customer_id: userId,
+                total_price: getTotalPrice() * 100, // Convert to paise
+                status: 'pending',
+                vendor_id: 1, // Example vendor ID
+                created_by: userId,
+                notes: 'Please deliver ASAP',
+                pick_up_time: '2025-8-90',
+                items: JSON.stringify([
+                    ...items.map(item => ({ item_id: item.item_id, quantity: item.quantity, price: item.price })),
+                ])
+            });
+
+            if (error) {
+                console.error('Error:', error);
+            } else {
+                console.log('Order inserted successfully!');
+            }
+
+            console.log('Cart uploaded successfully:', data);
+            return true;
+        } catch (error) {
+            console.error('Error uploading cart:', error);
+            Alert.alert('Error', 'Failed to save your order');
+            return false;
+        }
+    };
 
     // Function to create order on your backend
     const createOrder = async () => {
+        setLoading(true);
+
         try {
-            setLoading(true);
             // Call your Supabase Edge Function to create an order
             const response = await fetch('https://mnhisdyeqfhcjqfesdjs.supabase.co/functions/v1/createOrder', {
                 method: 'POST',
@@ -26,10 +98,9 @@ const PaymentScreen = () => {
                     Authorization: `Bearer ${proj_ref}`,
                 },
                 body: JSON.stringify({
-                    amount: amount, // in paise
+                    amount: amount * 100, // in paise
                     currency: 'INR',
                     receipt: `receipt_${Date.now()}`,
-                    // Include foodCourtId if needed for routing payments
                     foodCourtId: 'foodcourt1'
                 }),
             });
@@ -54,14 +125,21 @@ const PaymentScreen = () => {
         }
     };
 
-    const handlePaymentSuccess = (data: any) => {
-        // Verify payment on backend before confirming success to user
-        verifyPayment({
-            orderId: orderId,
-            paymentId: data.razorpay_payment_id,
-            signature: data.razorpay_signature
-        });
+    const handlePaymentSuccess = async (data: { razorpay_payment_id: string; razorpay_signature: string }) => {
+        // Save cart to database after simulated successful payment
+        const saved = await saveCartToDatabase();
+        if (saved) {
+            clearCart(); // Clear cart after successful upload
+            Alert.alert(
+                'Success',
+                `Payment simulated successfully! Payment ID: ${data.razorpay_payment_id}`,
+                [{ text: 'OK', onPress: () => router.push('./OrderConfirmation') }]
+            );
+        }
     };
+
+
+
 
     const handlePaymentError = (error: any) => {
         console.error('Payment error:', error);
@@ -72,57 +150,28 @@ const PaymentScreen = () => {
         setShowPayment(false);
     };
 
-    const verifyPayment = async (paymentData: {
-        orderId: string;
-        paymentId: string;
-        signature: string;
-    }) => {
-        try {
-            setLoading(true);
-            // Call your backend to verify payment
-            const response = await fetch('https://mnhisdyeqfhcjqfesdjs.supabase.co/functions/v1/verifyPayment', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(paymentData),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Verification failed with status: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (data.verified) {
-                Alert.alert('Success', `Payment verified successfully! ID: ${paymentData.paymentId}`);
-                // Handle successful payment (update UI, navigate to success screen, etc.)
-            } else {
-                Alert.alert('Warning', 'Payment received but verification failed. Please contact support.');
-            }
-        } catch (error) {
-            console.error('Verification error:', error);
-            Alert.alert(
-                'Verification Error',
-                'We received your payment, but had trouble verifying it. Please contact support with your payment ID.'
-            );
-        } finally {
-            setLoading(false);
-            setShowPayment(false);
-        }
-    };
 
     return (
         <View style={styles.container}>
             {loading ? (
                 <ActivityIndicator size="large" color="#0000ff" />
             ) : !showPayment ? (
-                <Button title="Proceed to Payment" onPress={createOrder} />
+                <>
+                    <Text style={styles.amountText}>Total Amount: ₹{amount}</Text>
+                    <Button
+                        title="Proceed to Payment"
+                        onPress={createOrder}
+                        disabled={items.length === 0}
+                    />
+                    {items.length === 0 && (
+                        <Text style={styles.errorText}>Your cart is empty</Text>
+                    )}
+                </>
             ) : (
                 <RazorpayCheckout
                     orderId={orderId}
                     amount={amount * 100} // Convert to paise
-                    keyId={rzrpayId} // Use the actual variable, not the string "rzrpayId"
+                    keyId={rzrpayId}
                     prefill={{
                         name: "Akshat",
                         email: "Akshat@example.com",
@@ -131,14 +180,16 @@ const PaymentScreen = () => {
                     onPaymentSuccess={handlePaymentSuccess}
                     onPaymentError={handlePaymentError}
                 />
-
             )}
-            <View style={styles.backbutton}>
-                <TouchableOpacity onPress={() => router.push('./Cart')}>
-                    <Text style={styles.backbuttontext}>Take me Back!</Text>
+
+            <View style={styles.backButtonContainer}>
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => router.push('./Cart')}
+                >
+                    <Text style={styles.backButtonText}>Back to Cart</Text>
                 </TouchableOpacity>
             </View>
-
         </View>
     );
 };
@@ -149,19 +200,31 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: 20,
     },
-
-    backbutton: {
-        justifyContent: 'center',
-        paddingTop: 20,
-        alignItems: 'center',
-        backgroundColor: '#ff6f61',
+    amountText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 20,
         textAlign: 'center',
     },
-
-    backbuttontext: {
+    errorText: {
+        color: 'red',
+        textAlign: 'center',
+        marginTop: 10,
+    },
+    backButtonContainer: {
+        marginTop: 30,
+        alignItems: 'center',
+    },
+    backButton: {
+        backgroundColor: '#ff6f61',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+    },
+    backButtonText: {
         color: 'white',
         fontWeight: 'bold',
-
+        fontSize: 16,
     }
 });
 

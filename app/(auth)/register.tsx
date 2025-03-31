@@ -4,6 +4,7 @@ import supabase from '../../supabase';
 import { router } from 'expo-router';
 import { Keyboard } from 'react-native';
 import { BlurView } from 'expo-blur';
+import toast from "react-hot-toast";
 
 // RegisterWithOTP Component
 const RegisterWithOTP = () => {
@@ -29,38 +30,38 @@ const RegisterWithOTP = () => {
           email: email,
           password: password,
         });
-
+        if (error) throw error;
+        if (!data.user) throw new Error('User creation failed.');
 
         // Step 2: Insert user details into "customer_details" table
-        const userId = data.user?.id; // Get the user ID from Supabase Auth
+        const userId = data.user.id; // Get the user ID from Supabase Auth
         if (!userId) throw new Error('User ID not found.');
 
-        console.log('User ID:', userId);
+        //console.log('User ID:', userId);
 
-        const { data: customerData, error: customerError } = await supabase
+        const { error: customerError } = await supabase
           .from('customer_details')
-          .insert([
+          .insert(
             {
-              user_id: userId, // Link to Supabase Auth user ID
-              email,
-              phonenumber: number,
               full_name: name,
+              email: email,
+              phonenumber: number,
+              created_at: new Date(),
+              user_id: userId, // Link to Supabase Auth user ID
             },
-          ])
-          .select();
+          )
 
         if (customerError) throw customerError;
 
 
         if (error) throw error;
-        console.log('Thanks for Signing Up!:', data);
+        toast.success('Thanks for Signing Up!:');
       }
       catch (error) {
         Alert.alert('Error signing up:', (error as Error).message);
       }
       finally {
         setLoading(false);
-        // router.push('../index');
       }
 
     }

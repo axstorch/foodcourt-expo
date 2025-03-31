@@ -1,16 +1,20 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Image, 
-  TouchableOpacity, 
-  ScrollView, 
-  Platform 
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  Platform
 } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useRouter } from 'expo-router';
+import supabase from '../../supabase'; // Adjust the import path as necessary
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 // Define navigation types
 type RootStackParamList = {
@@ -32,6 +36,7 @@ interface ProfileOption {
 
 export default function Profile() {
   const navigation = useNavigation<NavigationProp>();
+  const router = useRouter(); // Moved inside the component to prevent hook error
 
   const profileOptions: ProfileOption[] = [
     {
@@ -59,6 +64,30 @@ export default function Profile() {
       route: 'PaymentMethods'
     }
   ];
+
+  const handlesignout = async () => {
+    alert('Logout button pressed');
+    try {
+      // Sign out the user
+      const { error: signOutError } = await supabase.auth.signOut();
+
+      if (signOutError) {
+        console.error('Error signing out:', signOutError);
+        alert('Failed to log out. Please try again.');
+        return false;
+      }
+
+      // Clear local storage
+      await AsyncStorage.removeItem('userToken');
+      router.replace('../index'); // Redirect to login
+      console.log('User signed out successfully');
+      return true;
+    } catch (error) {
+      console.error('Unexpected error during logout:', error);
+      alert('An unexpected error occurred while logging out.');
+      return false;
+    }
+  };
 
   const renderProfileOption = ({ icon, title, description, route }: ProfileOption) => (
     <TouchableOpacity
@@ -99,8 +128,8 @@ export default function Profile() {
         <View style={styles.userInfoContainer}>
           <Text style={styles.userName}>ABra ka davra</Text>
           <Text style={styles.userEmail}>Americanpie@pork</Text>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.editButton}
             onPress={() => navigation.navigate('EditProfile')}
           >
@@ -130,7 +159,7 @@ export default function Profile() {
         {profileOptions.map(renderProfileOption)}
       </View>
 
-      <TouchableOpacity style={styles.logoutButton}>
+      <TouchableOpacity onPress={handlesignout} style={styles.logoutButton}>
         <Ionicons name="log-out-outline" size={24} color="#FF5722" />
         <Text style={styles.logoutText}>Log Out</Text>
       </TouchableOpacity>
