@@ -12,9 +12,22 @@ import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useRouter } from 'expo-router';
-import supabase from '../../supabase'; // Adjust the import path as necessary
+import supabase from '../../supabase'; // Removed to fix conflict
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createClient } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY || '';
+
+// const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+//   auth: {
+//     storage: AsyncStorage,
+//     autoRefreshToken: true,
+//     persistSession: true,
+//     detectSessionInUrl: false, // important for Expo
+//   },
+// });
 
 // Define navigation types
 type RootStackParamList = {
@@ -34,7 +47,48 @@ interface ProfileOption {
   route: keyof RootStackParamList;
 }
 
+
 export default function Profile() {
+
+  const [session, setSession] = React.useState<Session | null>(null);
+
+  React.useEffect(() => {
+    const fetchSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Error fetching session at profile.tsx", error);
+        return;
+      }
+
+      else {
+        console.log("Fetched session:", data.session);
+        setSession(data.session);
+      }
+    };
+
+    fetchSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      console.log("Auth state changed:", _event, currentSession);
+      setSession(currentSession);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+
+  // return (
+  //   <>
+  //     <Text>{session ? "Logged in ;)" : "Ain't logged in Bro"}</Text>
+  //   </>
+  // );
+
+
+
+  console.log("Current session:", session);
+
   const navigation = useNavigation<NavigationProp>();
   const router = useRouter(); // Moved inside the component to prevent hook error
 
@@ -65,6 +119,7 @@ export default function Profile() {
     }
   ];
 
+
   const handlesignout = async () => {
     alert('Logout button pressed');
     try {
@@ -79,7 +134,7 @@ export default function Profile() {
 
       // Clear local storage
       await AsyncStorage.removeItem('userToken');
-      router.replace('../index'); // Redirect to login
+      router.replace('/'); // Redirect to login
       console.log('User signed out successfully');
       return true;
     } catch (error) {
@@ -114,6 +169,9 @@ export default function Profile() {
         </TouchableOpacity>
       </View>
 
+      <Text>{session ? "Logged in ;)" : "Ain't logged in Bro"}</Text>
+
+
       <View style={styles.profileSection}>
         <View style={styles.avatarContainer}>
           <Image
@@ -131,7 +189,7 @@ export default function Profile() {
 
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => navigation.navigate('EditProfile')}
+            onPress={() => console.log('Edit Profile Pressed')}
           >
             <Text style={styles.editButtonText}>Edit Profile</Text>
             <MaterialCommunityIcons name="pencil" size={20} color="#FF5722" />
@@ -162,6 +220,7 @@ export default function Profile() {
       <TouchableOpacity onPress={handlesignout} style={styles.logoutButton}>
         <Ionicons name="log-out-outline" size={24} color="#FF5722" />
         <Text style={styles.logoutText}>Log Out</Text>
+
       </TouchableOpacity>
     </ScrollView>
   );

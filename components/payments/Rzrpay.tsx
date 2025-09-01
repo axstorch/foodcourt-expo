@@ -3,53 +3,53 @@ import { WebView } from 'react-native-webview';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 
 interface RazorpayProps {
-    orderId: string;
-    amount: number;
-    keyId: string;
-    prefill: {
-        name: string;
-        email: string;
-        contact: string;
-    };
-    onPaymentSuccess: (data: any) => void;
-    onPaymentError: (error: any) => void;
+  orderId: string;
+  amount: number;
+  keyId: string;
+  prefill: {
+    name: string;
+    email: string;
+    contact: string;
+  };
+  onPaymentSuccess: (data: any) => void;
+  onPaymentError: (error: any) => void;
 }
 
 const RazorpayCheckout: React.FC<RazorpayProps> = ({
-    orderId,
-    amount,
-    keyId,
-    prefill,
-    onPaymentSuccess,
-    onPaymentError
+  orderId,
+  amount,
+  keyId,
+  prefill,
+  onPaymentSuccess,
+  onPaymentError
 }) => {
-    const webViewRef = useRef<WebView>(null);
+  const webViewRef = useRef<WebView>(null);
 
-    // Fallback to environment variable if keyId prop is not provided
-    const razorpayKey = keyId || process.env.EXPO_PUBLIC_RZRPAY_KEY as string;
+  // Fallback to environment variable if keyId prop is not provided
+  const razorpayKey = keyId || process.env.EXPO_PUBLIC_RZRPAY_KEY as string;
 
-    // Ensure amount is a number and convert to paise (Razorpay uses paise)
-    const amountInPaise = Math.round(Number(amount));
+  // Ensure amount is a number and convert to paise (Razorpay uses paise)
+  const amountInPaise = Math.round(Number(amount));
 
-    // Validate required props
-    useEffect(() => {
-        if (!orderId) {
-            console.error('Razorpay Checkout: orderId is required');
-            onPaymentError({ error: { description: 'Missing order ID' } });
-        }
+  // Validate required props
+  useEffect(() => {
+    if (!orderId) {
+      console.error('Razorpay Checkout: orderId is required');
+      onPaymentError({ error: { description: 'Missing order ID' } });
+    }
 
-        if (!razorpayKey) {
-            console.error('Razorpay Checkout: keyId is required');
-            onPaymentError({ error: { description: 'Missing Razorpay API key' } });
-        }
+    if (!razorpayKey) {
+      console.error('Razorpay Checkout: keyId is required');
+      onPaymentError({ error: { description: 'Missing Razorpay API key' } });
+    }
 
-        if (isNaN(amountInPaise) || amountInPaise <= 0) {
-            console.error('Razorpay Checkout: amount must be a positive number');
-            onPaymentError({ error: { description: 'Invalid amount' } });
-        }
-    }, [orderId, razorpayKey, amountInPaise]);
+    if (isNaN(amountInPaise) || amountInPaise <= 0) {
+      console.error('Razorpay Checkout: amount must be a positive number');
+      onPaymentError({ error: { description: 'Invalid amount' } });
+    }
+  }, [orderId, razorpayKey, amountInPaise]);
 
-    const htmlContent = `
+  const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -85,7 +85,7 @@ const RazorpayCheckout: React.FC<RazorpayProps> = ({
     </head>
     <body>
       <div id="loading">Initializing payment gateway...</div>
-      <button id="rzp-button" style="display: none;">Pay ₹${(amountInPaise / 100).toFixed(2)}</button>
+      <button id="rzp-button" style="display: none;">Pay ₹${(amountInPaise).toFixed(2)}</button>
       
       <script>
         // Function to initialize Razorpay
@@ -161,79 +161,79 @@ const RazorpayCheckout: React.FC<RazorpayProps> = ({
     </html>
   `;
 
-    const handleMessage = (event: any) => {
-        try {
-            const data = JSON.parse(event.nativeEvent.data);
+  const handleMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
 
-            if (data.type === 'success') {
-                onPaymentSuccess(data.data);
-            } else if (data.type === 'error') {
-                onPaymentError(data.data);
-            } else if (data.type === 'dismissed') {
-                onPaymentError({ error: { description: 'Payment cancelled by user' } });
-            }
-        } catch (error) {
-            console.error('Error parsing WebView message:', error);
-            onPaymentError({
-                error: {
-                    description: 'Failed to process payment response'
-                }
-            });
+      if (data.type === 'success') {
+        onPaymentSuccess(data.data);
+      } else if (data.type === 'error') {
+        onPaymentError(data.data);
+      } else if (data.type === 'dismissed') {
+        onPaymentError({ error: { description: 'Payment cancelled by user' } });
+      }
+    } catch (error) {
+      console.error('Error parsing WebView message:', error);
+      onPaymentError({
+        error: {
+          description: 'Failed to process payment response'
         }
-    };
+      });
+    }
+  };
 
-    const renderLoading = () => {
-        return (
-            <View style={styles.loaderContainer}>
-                <ActivityIndicator size="large" color="#3399cc" />
-            </View>
-        );
-    };
-
+  const renderLoading = () => {
     return (
-        <View style={styles.container}>
-            <WebView
-                ref={webViewRef}
-                originWhitelist={['*']}
-                source={{ html: htmlContent }}
-                onMessage={handleMessage}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                startInLoadingState={true}
-                renderLoading={renderLoading}
-                style={styles.webview}
-                onError={(syntheticEvent) => {
-                    const { nativeEvent } = syntheticEvent;
-                    onPaymentError({
-                        error: {
-                            description: `WebView error: ${nativeEvent.description}`
-                        }
-                    });
-                }}
-            />
-        </View>
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#3399cc" />
+      </View>
     );
+  };
+
+  return (
+    <View style={styles.container}>
+      <WebView
+        ref={webViewRef}
+        originWhitelist={['*']}
+        source={{ html: htmlContent }}
+        onMessage={handleMessage}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        startInLoadingState={true}
+        renderLoading={renderLoading}
+        style={styles.webview}
+        onError={(syntheticEvent) => {
+          const { nativeEvent } = syntheticEvent;
+          onPaymentError({
+            error: {
+              description: `WebView error: ${nativeEvent.description}`
+            }
+          });
+        }}
+      />
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        width: '100%',
-        height: '100%',
-    },
-    webview: {
-        flex: 1,
-    },
-    loaderContainer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    }
+  container: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  webview: {
+    flex: 1,
+  },
+  loaderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  }
 });
 
 export default RazorpayCheckout;

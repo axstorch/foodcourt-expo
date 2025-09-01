@@ -103,3 +103,4 @@ export const useCart = () => {
   }
   return context;
 };
+export default CartProvider

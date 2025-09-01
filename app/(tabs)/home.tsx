@@ -15,6 +15,7 @@ import { useCart } from '../Context/CartContext';  // Use relative path
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import supabase from '../../supabase.js';  // Use relative path
 import { createClient } from '@supabase/supabase-js';
+import { useEffect } from 'react';
 
 
 interface FoodCourt {
@@ -60,6 +61,22 @@ const HomePage: React.FC = () => {
     { id: '9', name: 'Pasta', price: 9.99, cuisine: 'Italian', image: require('../../assets/images/pasta.png') },
 
   ];
+
+  const email = '';
+  const password = '';
+
+  useEffect(() => {
+    const signIn = async () => {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      console.log("result:", data);
+
+    };
+    signIn();
+  }, []);
+
 
 
   const foodcourt: FoodCourt[] = [

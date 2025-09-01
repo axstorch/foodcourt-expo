@@ -1,11 +1,11 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import supabase from '../../supabase'; // your supabase.js
 
 interface AuthContextType {
-  userToken: string | null;
-  signIn: (token: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  session: any | null;
+  user: any | null;
   isLoading: boolean;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -17,36 +17,47 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [userToken, setUserToken] = useState<string | null>(null);
+  const [session, setSession] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadToken = async () => {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        setUserToken(token);
-      } catch (error) {
-        console.log('Error loading token:', error);
-      } finally {
-        setIsLoading(false);
-      }
+    // 🔹 Get session on load
+    const getSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) console.log("Error getting session:", error.message);
+      setSession(data.session);
+      setIsLoading(false);
     };
-    loadToken();
+
+    getSession();
+
+    // 🔹 Listen for changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
-  const signIn = async (token: string) => {
-    await AsyncStorage.setItem('userToken', token);
-    setUserToken(token);
-  };
-
   const signOut = async () => {
-    await AsyncStorage.removeItem('userToken');
-    setUserToken(null);
+    await supabase.auth.signOut();
+    setSession(null);
   };
 
   return (
-    <AuthContext.Provider value={{ userToken, signIn, signOut, isLoading }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        user: session?.user ?? null,
+        isLoading,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
+
+export default AuthProvider;

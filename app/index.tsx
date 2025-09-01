@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ImageBackground, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
+import { View, Text, Button, TextInput, TouchableOpacity, StyleSheet, Image, ImageBackground, TouchableWithoutFeedback, ActivityIndicator, Alert } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useRouter, Redirect } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { Keyboard } from 'react-native';
 import supabase from '../supabase';
 import { useAuth } from './Context/AuthContext';
-
+import 'react-native-url-polyfill/auto';
+import Toast from 'react-native-toast-message';
 
 
 const SignIn = () => {
@@ -14,7 +15,7 @@ const SignIn = () => {
   const [password, setPassword] = useState('');
   const router = useRouter();
 
-  const { signIn, userToken, isLoading } = useAuth();
+const { user, session, isLoading, signOut } = useAuth();
 
   const [fontsLoaded] = useFonts({
     Dancingscript: require('../assets/fonts/DancingScript-Regular.ttf'),
@@ -22,44 +23,46 @@ const SignIn = () => {
 
   useEffect(() => {
 
-    if (!isLoading && userToken) {
+    if (!isLoading && user) {
       router.replace('/(tabs)/home');
     }
-  }, [userToken, isLoading]);
+  }, [user, isLoading]);
 
   const handleSignIn = async () => {
-    console.log('Sign In clicked');
-    
+  console.log('Sign In clicked');
 
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
-
-      if (error) {
-        console.error('Error signing in:', error.message);
-      }
-
-      if (data.session?.access_token) {
-        // Save token to context and AsyncStorage
-        await signIn(data.session.access_token);
-
-        router.replace('./(tabs)/home');
-      }
-    } catch (err) {
-      console.error('Unexpected error:', err);
+    if (error) {
+      Alert.alert('Error signing in', error.message);
+      console.error('Error signing in:', error.message);
+      return;
     }
-  };
+
+    if (data.session) {
+      // Session is already persisted by Supabase
+      router.replace('/(tabs)/home');
+    }
+  } catch (err) {
+    console.error('Unexpected error:', err);
+  }
+};
 
 
 
   const handleGoogleSignIn = () => {
     // Add Google sign-in logic here
     console.log('Google Sign-In clicked');
-    router.push('./+not-found');
-  };
+
+    Toast.show({
+      type: 'error',
+      text1: 'Google Sign-In not implemented yet'
+    });
+  }
 
   if (isLoading) {
     return (
@@ -70,16 +73,16 @@ const SignIn = () => {
   }
 
   return (
-    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-      <ImageBackground style={styles.container} source={require('../assets/images/HomeBG.jpg')} resizeMode='cover'>
-        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+    <TouchableWithoutFeedback>
+      <ImageBackground style={styles.container} source={require('../assets/images/HomeBG.jpg')} resizeMode='repeat'>
+        <TouchableWithoutFeedback>
           <BlurView intensity={100} experimentalBlurMethod='none' tint='default' style={{ backgroundColor: 'rgba(236, 228, 228, 0.75)', padding: 20, borderRadius: 25, overflow: 'hidden' }}>
             <Image source={require('../assets/images/Logo.png')} style={styles.topImage} />
             {/* Username Input */}
             <TextInput
               style={styles.input}
               placeholder='Email'
-              placeholderTextColor=""
+              placeholderTextColor="#999"
               value={email}
               onChangeText={setEmail}
             />

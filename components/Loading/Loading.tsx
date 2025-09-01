@@ -39,7 +39,7 @@ const VideoSplashScreen: React.FC<VideoSplashScreenProps> = ({ onFinish }) => {
     <View style={styles.container}>
       <Video
         ref={videoRef}
-        source = {require('../../assets/animations/NewLoading.mp4')}
+        //source = {'../../assets/animations/NewLoading.mp4'}
         style={styles.video}
         resizeMode={ResizeMode.COVER}
         shouldPlay={true}

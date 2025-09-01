@@ -1,44 +1,91 @@
 import { serve } from "https://deno.land/std@0.114.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+console.log("Starting Supabase Edge Function...");
 
 serve(async (req) => {
   try {
-    // Handle preflight requests (OPTIONS)
     if (req.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    // 1. Verify Supabase JWT
+    const authHeader = req.headers.get("Authorization");
+    console.log("Incoming Authorization Header:", authHeader);
+
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Missing auth header" }), {
+        status: 401,
         headers: corsHeaders,
       });
     }
 
-    // Parse request body
-    const { amount, currency, receipt, foodCourtId } = await req.json();
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")! // ok here because it runs only inside the function
+    );
 
-    // Razorpay credentials
-    const razorpayKeyId = Deno.env.get("EXPO_PUBLIC_RZRPAY_KEY");
-    const razorpayKeySecret = Deno.env.get("EXPO_PUBLIC_RZRPAY_SECRET");
+    const token = authHeader.replace("Bearer ", "");
+    console.log("Extracted Token (first 20 chars):", token.slice(0, 20));
+
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
+        status: 401,
+        headers: corsHeaders,
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const verifyResp = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+        if (!verifyResp.ok) {
+      const err = await verifyResp.text();
+      console.error("Supabase JWT verification failed:", err);
+      return new Response(
+        JSON.stringify({ error: "Invalid JWT", details: err }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const user = await verifyResp.json();
+    console.log("Authenticated user:", user);
+
+
+    // 2. Parse request body
+    const { amount, currency, receipt } = await req.json();
+
+    // 3. Razorpay creds
+    const razorpayKeyId = Deno.env.get("RAZORPAY_KEY_ID");
+    const razorpayKeySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
 
     if (!razorpayKeyId || !razorpayKeySecret) {
       throw new Error("Razorpay credentials are missing");
     }
 
-    // Call Razorpay API
+    // 4. Call Razorpay API
     const response = await fetch("https://api.razorpay.com/v1/orders", {
       method: "POST",
       headers: {
-        Authorization: `Basic ${btoa(`${razorpayKeyId}:${razorpayKeySecret}`)}`, // Razorpay authorization
+        Authorization: `Basic ${btoa(`${razorpayKeyId}:${razorpayKeySecret}`)}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        amount: amount, // Convert to paise
+        amount: amount,
         currency: currency || "INR",
         receipt: receipt || `receipt_${Date.now()}`,
-        notes: { foodCourtId },
       }),
     });
 
     if (!response.ok) {
       const error = await response.json();
+      console.error("Razorpay API error:", error);
       return new Response(JSON.stringify({ error }), {
         status: response.status,
         headers: corsHeaders,
@@ -46,12 +93,15 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log("Razorpay order created successfully:", data);
+
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Edge Function error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: corsHeaders,

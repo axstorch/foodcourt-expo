@@ -13,9 +13,9 @@ const PaymentScreen = () => {
 
     const { items, getTotalPrice, clearCart } = useCart();
 
-    const amount = getTotalPrice() || 9000000000; // Fallback to 90 if cart is empty
+    const amount = getTotalPrice() || 1; // Fallback to 1 if cart is empty
     const rzrpayId = process.env.EXPO_PUBLIC_RZRPAY_KEY || '';
-    const proj_ref = process.env.EXPO_PUBLIC_PROJ_REF;
+    //const rzrSecret = process.env.EXPO_PUBLIC_RZRPAY_SECRET;
 
     // Get user ID on component mount
     useEffect(() => {
@@ -44,34 +44,38 @@ const PaymentScreen = () => {
             return false;
         }
 
-        // const { data, error } = await supabase
-        //         .from("cartitems_dynamic")
-        //         .insert(
-        //             items.map((item) => ({
-        //                 //customerid: userId,
-        //                 itemid: item.item_id,
-        //                 price: item.price,
-        //                 quantity: item.quantity,
-        //             }))
-        //         );
-
-
         try {
+            const orderItems = items.map(item => ({
+                item_id: item.item_id,
+                quantity: item.quantity,
+                price: item.price
+            }));
+
+            const payload = {
+                p_total_price: getTotalPrice(),
+                p_status: 'pending',
+                p_vendor_id: 1,
+                p_created_by: userId,
+                p_notes: 'Please deliver ASAP',
+                p_pick_up_time: 10,
+                p_items: orderItems
+            };
+
+            console.log("Payload to Supabase:", JSON.stringify(payload, null, 2));
+
+            // Call Supabase RPC to insert order with items
             const { data, error } = await supabase.rpc('insert_order_with_items', {
-                customer_id: userId,
-                total_price: getTotalPrice() * 100, // Convert to paise
-                status: 'pending',
-                vendor_id: 1, // Example vendor ID
-                created_by: userId,
-                notes: 'Please deliver ASAP',
-                pick_up_time: '2025-8-90',
-                items: JSON.stringify([
-                    ...items.map(item => ({ item_id: item.item_id, quantity: item.quantity, price: item.price })),
-                ])
+                p_total_price: getTotalPrice(), // Convert to paise
+                p_status: 'pending',
+                p_vendor_id: 1, // Example vendor ID
+                p_created_by: userId,
+                p_notes: 'Please deliver ASAP',
+                p_pick_up_time: 10, // minute to pick up orders
+                p_items: orderItems // Pass items as JSON
             });
 
             if (error) {
-                console.error('Error:', error);
+                console.error('RPC Error:', error.message, error.details, error.hint);
             } else {
                 console.log('Order inserted successfully!');
             }
@@ -85,28 +89,33 @@ const PaymentScreen = () => {
         }
     };
 
+
+
     // Function to create order on your backend
     const createOrder = async () => {
         setLoading(true);
 
         try {
+            // Get the current session from Supabase
+            const { data: { session } } = await supabase.auth.getSession();
+            console.log("(getting session) Current session:", session);
+
             // Call your Supabase Edge Function to create an order
             const response = await fetch('https://mnhisdyeqfhcjqfesdjs.supabase.co/functions/v1/createOrder', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${proj_ref}`,
+                    Authorization: `Bearer ${session?.access_token}`,
                 },
                 body: JSON.stringify({
-                    amount: amount * 100, // in paise
+                    amount: amount,
                     currency: 'INR',
                     receipt: `receipt_${Date.now()}`,
-                    foodCourtId: 'foodcourt1'
                 }),
             });
 
             if (!response.ok) {
-                throw new Error(`Server responded with status: ${response.status}`);
+                throw new Error(`Am failing at payment.tsx responded with status: ${response.status}`);
             }
 
             const data = await response.json();
@@ -138,9 +147,6 @@ const PaymentScreen = () => {
         }
     };
 
-
-
-
     const handlePaymentError = (error: any) => {
         console.error('Payment error:', error);
         Alert.alert(
@@ -170,7 +176,7 @@ const PaymentScreen = () => {
             ) : (
                 <RazorpayCheckout
                     orderId={orderId}
-                    amount={amount * 100} // Convert to paise
+                    amount={amount}
                     keyId={rzrpayId}
                     prefill={{
                         name: "Akshat",
@@ -185,7 +191,7 @@ const PaymentScreen = () => {
             <View style={styles.backButtonContainer}>
                 <TouchableOpacity
                     style={styles.backButton}
-                    onPress={() => router.push('./Cart')}
+                    onPress={() => router.push('../(tabs)/Cart')}
                 >
                     <Text style={styles.backButtonText}>Back to Cart</Text>
                 </TouchableOpacity>
