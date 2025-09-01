@@ -14,8 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useCart } from '../Context/CartContext';  // Use relative path
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import supabase from '../../supabase.js';  // Use relative path
-import { createClient } from '@supabase/supabase-js';
-import { useEffect } from 'react';
+import { useAuth } from '../Context/AuthContext';
 
 
 interface FoodCourt {
@@ -62,21 +61,13 @@ const HomePage: React.FC = () => {
 
   ];
 
-  const email = '';
-  const password = '';
+  const { user, session, signOut, isLoading } = useAuth();
 
-  useEffect(() => {
-    const signIn = async () => {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      console.log("result:", data);
+  // console.log("Current session from context:", session);
+  // console.log("Current user:", user);
 
-    };
-    signIn();
-  }, []);
 
+  // console.log("Current session:", session);
 
 
   const foodcourt: FoodCourt[] = [

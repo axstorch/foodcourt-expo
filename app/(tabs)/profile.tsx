@@ -14,20 +14,11 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useRouter } from 'expo-router';
 import supabase from '../../supabase'; // Removed to fix conflict
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient } from '@supabase/supabase-js';
-import { Session } from '@supabase/supabase-js';
+import { useAuth } from '../Context/AuthContext';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY || '';
 
-// const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-//   auth: {
-//     storage: AsyncStorage,
-//     autoRefreshToken: true,
-//     persistSession: true,
-//     detectSessionInUrl: false, // important for Expo
-//   },
-// });
 
 // Define navigation types
 type RootStackParamList = {
@@ -50,47 +41,22 @@ interface ProfileOption {
 
 export default function Profile() {
 
-  const [session, setSession] = React.useState<Session | null>(null);
+  const { user, session, signOut, isLoading } = useAuth();
+  const navigation = useNavigation();
+  const router = useRouter();
 
-  React.useEffect(() => {
-    const fetchSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Error fetching session at profile.tsx", error);
-        return;
-      }
-
-      else {
-        console.log("Fetched session:", data.session);
-        setSession(data.session);
-      }
-    };
-
-    fetchSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      console.log("Auth state changed:", _event, currentSession);
-      setSession(currentSession);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-
-  // return (
-  //   <>
-  //     <Text>{session ? "Logged in ;)" : "Ain't logged in Bro"}</Text>
-  //   </>
-  // );
-
+  console.log("Current session from context:", session);
+  console.log("Current user:", user);
 
 
   console.log("Current session:", session);
 
-  const navigation = useNavigation<NavigationProp>();
-  const router = useRouter(); // Moved inside the component to prevent hook error
+  const handleLogout = async () => {
+    await signOut();
+    router.replace('/'); // Redirect to sign-in screen
+
+  };
+
 
   const profileOptions: ProfileOption[] = [
     {
@@ -120,35 +86,11 @@ export default function Profile() {
   ];
 
 
-  const handlesignout = async () => {
-    alert('Logout button pressed');
-    try {
-      // Sign out the user
-      const { error: signOutError } = await supabase.auth.signOut();
-
-      if (signOutError) {
-        console.error('Error signing out:', signOutError);
-        alert('Failed to log out. Please try again.');
-        return false;
-      }
-
-      // Clear local storage
-      await AsyncStorage.removeItem('userToken');
-      router.replace('/'); // Redirect to login
-      console.log('User signed out successfully');
-      return true;
-    } catch (error) {
-      console.error('Unexpected error during logout:', error);
-      alert('An unexpected error occurred while logging out.');
-      return false;
-    }
-  };
-
   const renderProfileOption = ({ icon, title, description, route }: ProfileOption) => (
     <TouchableOpacity
       key={title}
       style={styles.optionCard}
-      onPress={() => navigation.navigate(route)}
+      onPress={() => router.push(`/`)}
     >
       <View style={styles.optionIconContainer}>
         <Ionicons name={icon as any} size={24} color="#FF5722" />
@@ -217,7 +159,7 @@ export default function Profile() {
         {profileOptions.map(renderProfileOption)}
       </View>
 
-      <TouchableOpacity onPress={handlesignout} style={styles.logoutButton}>
+      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
         <Ionicons name="log-out-outline" size={24} color="#FF5722" />
         <Text style={styles.logoutText}>Log Out</Text>
 

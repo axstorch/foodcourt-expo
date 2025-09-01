@@ -4,6 +4,8 @@ import RazorpayCheckout from '../../components/payments/Rzrpay';
 import { router } from 'expo-router';
 import supabase from '../../supabase';
 import { useCart } from '../Context/CartContext';
+import { useAuth } from '../Context/AuthContext';
+
 
 const PaymentScreen = () => {
     const [showPayment, setShowPayment] = useState(false);
@@ -89,16 +91,20 @@ const PaymentScreen = () => {
         }
     };
 
+const { session } = useAuth();
 
 
     // Function to create order on your backend
     const createOrder = async () => {
+
+        if (!session) {
+        Alert.alert("Error", "No active session found. Please login again.");
+        return;
+    }
+
         setLoading(true);
 
-        try {
-            // Get the current session from Supabase
-            const { data: { session } } = await supabase.auth.getSession();
-            console.log("(getting session) Current session:", session);
+        try{
 
             // Call your Supabase Edge Function to create an order
             const response = await fetch('https://mnhisdyeqfhcjqfesdjs.supabase.co/functions/v1/createOrder', {
@@ -134,6 +140,8 @@ const PaymentScreen = () => {
         }
     };
 
+
+    
     const handlePaymentSuccess = async (data: { razorpay_payment_id: string; razorpay_signature: string }) => {
         // Save cart to database after simulated successful payment
         const saved = await saveCartToDatabase();

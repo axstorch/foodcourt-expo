@@ -12,8 +12,6 @@ serve(async (req) => {
 
     // 1. Verify Supabase JWT
     const authHeader = req.headers.get("Authorization");
-    console.log("Incoming Authorization Header:", authHeader);
-
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Missing auth header" }), {
         status: 401,
@@ -23,12 +21,10 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")! // ok here because it runs only inside the function
+      Deno.env.get("SUPABASE_ANON_KEY")!
     );
 
     const token = authHeader.replace("Bearer ", "");
-    console.log("Extracted Token (first 20 chars):", token.slice(0, 20));
-
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
@@ -38,25 +34,7 @@ serve(async (req) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const verifyResp = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-        if (!verifyResp.ok) {
-      const err = await verifyResp.text();
-      console.error("Supabase JWT verification failed:", err);
-      return new Response(
-        JSON.stringify({ error: "Invalid JWT", details: err }),
-        { status: 401, headers: corsHeaders }
-      );
-    }
-
-    const user = await verifyResp.json();
     console.log("Authenticated user:", user);
-
 
     // 2. Parse request body
     const { amount, currency, receipt } = await req.json();
@@ -77,7 +55,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        amount: amount,
+        amount,
         currency: currency || "INR",
         receipt: receipt || `receipt_${Date.now()}`,
       }),
