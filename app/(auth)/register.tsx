@@ -4,7 +4,7 @@ import supabase from '../../supabase';
 import { router } from 'expo-router';
 import { Keyboard } from 'react-native';
 import { BlurView } from 'expo-blur';
-import toast from "react-hot-toast";
+import toast from "react-native-toast-message";
 
 // RegisterWithOTP Component
 const RegisterWithOTP = () => {
@@ -55,7 +55,11 @@ const RegisterWithOTP = () => {
 
 
         if (error) throw error;
-        toast.success('Thanks for Signing Up!:');
+        toast.show({
+          type: 'success',
+          text1: 'Thanks for Signing Up!',
+        });
+
       }
       catch (error) {
         Alert.alert('Error signing up:', (error as Error).message);
@@ -139,7 +143,8 @@ const RegisterWithOTP = () => {
 
             <View style={{ flexDirection: 'row', alignSelf: 'center' }}>
               <Text style={{ marginTop: 20 }}>Already Registered? </Text>
-              <TouchableOpacity onPress={handleback}>
+              <TouchableOpacity onPress={() => router.replace('../index')}>
+
                 <Text style={styles.BackButton}> Log in</Text>
               </TouchableOpacity>
             </View>

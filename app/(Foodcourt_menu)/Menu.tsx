@@ -67,7 +67,6 @@ export default function Menu() {
     try {
       const { data, error } = await supabase
         .from("menu")
-
         //vendors:vendors!menu_vendorid_fkey(vendor_id, name), is used to specify the foreign key relationship that needs to be used 
         //cause menu and vendor has 2 foreign relationship. and they are cyclic. so we need to specify the foreign key relationship 
 

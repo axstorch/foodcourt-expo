@@ -12,8 +12,12 @@ import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useRouter } from 'expo-router';
-import supabase from '../../supabase'; // Adjust the import path as necessary
+import supabase from '../../supabase'; // Removed to fix conflict
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../Context/AuthContext';
+
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY || '';
 
 
 // Define navigation types
@@ -34,9 +38,25 @@ interface ProfileOption {
   route: keyof RootStackParamList;
 }
 
+
 export default function Profile() {
-  const navigation = useNavigation<NavigationProp>();
-  const router = useRouter(); // Moved inside the component to prevent hook error
+
+  const { user, session, signOut, isLoading } = useAuth();
+  const navigation = useNavigation();
+  const router = useRouter();
+
+  console.log("Current session from context:", session);
+  console.log("Current user:", user);
+
+
+  console.log("Current session:", session);
+
+  const handleLogout = async () => {
+    await signOut();
+    router.replace('/'); // Redirect to sign-in screen
+
+  };
+
 
   const profileOptions: ProfileOption[] = [
     {
@@ -65,35 +85,12 @@ export default function Profile() {
     }
   ];
 
-  const handlesignout = async () => {
-    alert('Logout button pressed');
-    try {
-      // Sign out the user
-      const { error: signOutError } = await supabase.auth.signOut();
-
-      if (signOutError) {
-        console.error('Error signing out:', signOutError);
-        alert('Failed to log out. Please try again.');
-        return false;
-      }
-
-      // Clear local storage
-      await AsyncStorage.removeItem('userToken');
-      router.replace('../index'); // Redirect to login
-      console.log('User signed out successfully');
-      return true;
-    } catch (error) {
-      console.error('Unexpected error during logout:', error);
-      alert('An unexpected error occurred while logging out.');
-      return false;
-    }
-  };
 
   const renderProfileOption = ({ icon, title, description, route }: ProfileOption) => (
     <TouchableOpacity
       key={title}
       style={styles.optionCard}
-      onPress={() => navigation.navigate(route)}
+      onPress={() => router.push(`/`)}
     >
       <View style={styles.optionIconContainer}>
         <Ionicons name={icon as any} size={24} color="#FF5722" />
@@ -114,6 +111,9 @@ export default function Profile() {
         </TouchableOpacity>
       </View>
 
+      <Text>{session ? "Logged in ;)" : "Ain't logged in Bro"}</Text>
+
+
       <View style={styles.profileSection}>
         <View style={styles.avatarContainer}>
           <Image
@@ -131,7 +131,7 @@ export default function Profile() {
 
           <TouchableOpacity
             style={styles.editButton}
-            onPress={() => navigation.navigate('EditProfile')}
+            onPress={() => console.log('Edit Profile Pressed')}
           >
             <Text style={styles.editButtonText}>Edit Profile</Text>
             <MaterialCommunityIcons name="pencil" size={20} color="#FF5722" />
@@ -159,9 +159,10 @@ export default function Profile() {
         {profileOptions.map(renderProfileOption)}
       </View>
 
-      <TouchableOpacity onPress={handlesignout} style={styles.logoutButton}>
+      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
         <Ionicons name="log-out-outline" size={24} color="#FF5722" />
         <Text style={styles.logoutText}>Log Out</Text>
+
       </TouchableOpacity>
     </ScrollView>
   );

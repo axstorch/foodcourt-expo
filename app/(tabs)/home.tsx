@@ -14,7 +14,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useCart } from '../Context/CartContext';  // Use relative path
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import supabase from '../../supabase.js';  // Use relative path
-import { createClient } from '@supabase/supabase-js';
+import { useAuth } from '../Context/AuthContext';
 
 
 interface FoodCourt {
@@ -60,6 +60,14 @@ const HomePage: React.FC = () => {
     { id: '9', name: 'Pasta', price: 9.99, cuisine: 'Italian', image: require('../../assets/images/pasta.png') },
 
   ];
+
+  const { user, session, signOut, isLoading } = useAuth();
+
+  // console.log("Current session from context:", session);
+  // console.log("Current user:", user);
+
+
+  // console.log("Current session:", session);
 
 
   const foodcourt: FoodCourt[] = [
