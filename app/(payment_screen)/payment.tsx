@@ -91,22 +91,22 @@ const PaymentScreen = () => {
         }
     };
 
-const { session } = useAuth();
+    const { session } = useAuth();
 
 
     // Function to create order on your backend
     const createOrder = async () => {
 
         if (!session) {
-        Alert.alert("Error", "No active session found. Please login again.");
-        return;
-    }
+            Alert.alert("Error", "No active session found. Please login again.");
+            return;
+        }
 
         setLoading(true);
 
-        try{
+        try {
 
-            // Call your Supabase Edge Function to create an order
+            // Calls Supabase Edge Function to create an order
             const response = await fetch('https://mnhisdyeqfhcjqfesdjs.supabase.co/functions/v1/createOrder', {
                 method: 'POST',
                 headers: {
@@ -114,7 +114,7 @@ const { session } = useAuth();
                     Authorization: `Bearer ${session?.access_token}`,
                 },
                 body: JSON.stringify({
-                    amount: amount,
+                    amount: amount * 100,
                     currency: 'INR',
                     receipt: `receipt_${Date.now()}`,
                 }),
@@ -141,7 +141,7 @@ const { session } = useAuth();
     };
 
 
-    
+
     const handlePaymentSuccess = async (data: { razorpay_payment_id: string; razorpay_signature: string }) => {
         // Save cart to database after simulated successful payment
         const saved = await saveCartToDatabase();

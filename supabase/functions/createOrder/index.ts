@@ -21,13 +21,17 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")! // switched to service role
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser(token);
 
     if (error || !user) {
+      console.error("Auth error:", error);
       return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
         status: 401,
         headers: corsHeaders,
@@ -77,7 +81,6 @@ serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (error) {
     console.error("Edge Function error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
