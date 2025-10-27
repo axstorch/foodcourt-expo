@@ -1,17 +1,23 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "@expo/typescript-config/native",
   "compilerOptions": {
     "strict": true,
+    "baseUrl": ".",
+    "jsx": "react-native",
     "paths": {
       "@/*": [
         "./*"
       ]
-    }
     },
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-, "app/VendorPage.tsx"  ]
+    "expo-env.d.ts",
+  ]
 }

@@ -13,7 +13,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) throw new Error('useAuth must be used within an AuthProvider. here');
   return context;
 };
 
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     <AuthContext.Provider
       value={{
         session,
-        user: session?.user ?? null, // ✅ derived from session
+        user: session?.user ?? null, // derived from session
         isLoading,
         signOut,
       }}

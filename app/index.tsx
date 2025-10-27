@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import 'react-native-reanimated';
 import { View, Text, Button, TextInput, TouchableOpacity, StyleSheet, Image, ImageBackground, TouchableWithoutFeedback, ActivityIndicator, Alert } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useRouter, Redirect } from 'expo-router';
@@ -10,12 +11,12 @@ import 'react-native-url-polyfill/auto';
 import Toast from 'react-native-toast-message';
 
 
-const SignIn = () => {
+  export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
 
-const { user, session, isLoading, signOut } = useAuth();
+  const { user, session, isLoading, signOut } = useAuth();
 
   const [fontsLoaded] = useFonts({
     Dancingscript: require('../assets/fonts/DancingScript-Regular.ttf'),
@@ -29,28 +30,28 @@ const { user, session, isLoading, signOut } = useAuth();
   }, [user, isLoading]);
 
   const handleSignIn = async () => {
-  console.log('Sign In clicked');
+    console.log('Sign In clicked');
 
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      Alert.alert('Error signing in', error.message);
-      console.error('Error signing in:', error.message);
-      return;
+      if (error) {
+        Alert.alert('Error signing in', error.message);
+        console.error('Error signing in:', error.message);
+        return;
+      }
+
+      if (data.session) {
+        // Session is already persisted by Supabase
+        router.replace('/(tabs)/home');
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
     }
-
-    if (data.session) {
-      // Session is already persisted by Supabase
-      router.replace('/(tabs)/home');
-    }
-  } catch (err) {
-    console.error('Unexpected error:', err);
-  }
-};
+  };
 
 
 
@@ -127,8 +128,9 @@ const { user, session, isLoading, signOut } = useAuth();
     </TouchableWithoutFeedback>
 
   );
-};
+  }
 
+  
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -218,4 +220,3 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SignIn;
