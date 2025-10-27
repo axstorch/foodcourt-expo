@@ -2,6 +2,10 @@
 // when using keys from supabase, use EXPO_PUBLIC_ prefix
 export default {
   expo: {
+    "metro": {
+      "port": 8081
+    },
+
     extra: {
       eas: {
         projectId: "c54131a0-6fc5-419f-9078-008a2171c46e"

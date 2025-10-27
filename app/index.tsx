@@ -5,18 +5,19 @@ import { BlurView } from 'expo-blur';
 import { useRouter, Redirect } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { Keyboard } from 'react-native';
+// @ts-ignore: missing declaration for local supabase module
 import supabase from '../supabase';
 import { useAuth } from './Context/AuthContext';
 import 'react-native-url-polyfill/auto';
 import Toast from 'react-native-toast-message';
 
 
-  export default function SignIn() {
+export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
 
-  const { user, session, isLoading, signOut } = useAuth();
+  const { user, isLoading } = useAuth();
 
   const [fontsLoaded] = useFonts({
     Dancingscript: require('../assets/fonts/DancingScript-Regular.ttf'),
@@ -50,6 +51,7 @@ import Toast from 'react-native-toast-message';
       }
     } catch (err) {
       console.error('Unexpected error:', err);
+      Alert.alert('Unexpected error', 'An unexpected error occurred. Please try again.');
     }
   };
 
@@ -64,6 +66,7 @@ import Toast from 'react-native-toast-message';
       text1: 'Google Sign-In not implemented yet'
     });
   }
+
 
   if (isLoading) {
     return (
@@ -128,9 +131,9 @@ import Toast from 'react-native-toast-message';
     </TouchableWithoutFeedback>
 
   );
-  }
+}
 
-  
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
