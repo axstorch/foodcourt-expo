@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Alert, ImageBackground, Image, Pressable } from 'react-native';
+// @ts-ignore: local JS module has no TS declaration
 import supabase from '../../supabase';
 import { router } from 'expo-router';
 import { Keyboard } from 'react-native';

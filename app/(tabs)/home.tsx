@@ -13,7 +13,6 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCart } from '../Context/CartContext';  // Use relative path
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import supabase from '../../supabase.js';  // Use relative path
 import { useAuth } from '../Context/AuthContext';
 
 
