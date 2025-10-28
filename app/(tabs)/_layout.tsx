@@ -2,8 +2,8 @@ import { Tabs } from 'expo-router';
 import { AuthProvider } from '../Context/AuthContext';
 import React from 'react';
 import { Platform, View } from 'react-native';
-import { HapticTab } from '@/components/HapticTab';
-import TabBarBackground from '@/components/ui/TabBarBackground';
+//import { HapticTab } from '@/components/HapticTab';
+import TabBarBackground from '@/components/ui/TabBarBackground.ios';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -22,7 +22,7 @@ export default function TabLayout() {
               tabBarActiveTintColor: "#ff6f61",
               tabBarInactiveTintColor: "#000",
               headerShown: false,
-              tabBarButton: HapticTab,
+             // tabBarButton: HapticTab,
               tabBarBackground: TabBarBackground,
               tabBarStyle: Platform.select({
                 ios: {

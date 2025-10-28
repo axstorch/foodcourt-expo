@@ -1,7 +1,7 @@
 {
   "extends": "@expo/typescript-config/native",
   "compilerOptions": {
-    "strict": true,
+    "strict": false,
     "baseUrl": ".",
     "jsx": "react-native",
     "paths": {

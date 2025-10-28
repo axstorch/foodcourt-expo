@@ -11,7 +11,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../Context/CartContext';
 import { Stack } from 'expo-router';
-import { Colors } from 'react-native/Libraries/NewAppScreen';
 import { router } from 'expo-router';
 
 interface FoodItem {

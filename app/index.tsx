@@ -4,7 +4,6 @@ import { View, Text, Button, TextInput, TouchableOpacity, StyleSheet, Image, Ima
 import { BlurView } from 'expo-blur';
 import { useRouter, Redirect } from 'expo-router';
 import { useFonts } from 'expo-font';
-import { Keyboard } from 'react-native';
 // @ts-ignore: missing declaration for local supabase module
 import supabase from '../supabase';
 import { useAuth } from './Context/AuthContext';
@@ -23,6 +22,8 @@ export default function SignIn() {
     Dancingscript: require('../assets/fonts/DancingScript-Regular.ttf'),
   });
 
+
+
   useEffect(() => {
 
     if (!isLoading && user) {
@@ -38,6 +39,9 @@ export default function SignIn() {
         email,
         password,
       });
+
+      console.log('🔐 Login data:', data);
+      console.log('⚠️ Login error:', error);
 
       if (error) {
         Alert.alert('Error signing in', error.message);
