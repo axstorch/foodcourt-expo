@@ -1,342 +1,210 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  Platform
-} from 'react-native';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import supabase from '../../supabase'; // Removed to fix conflict
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../Context/AuthContext';
-
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY || '';
-
-
-// Define navigation types
-type RootStackParamList = {
-  Favorites: undefined;
-  OrderHistory: undefined;
-  Addresses: undefined;
-  PaymentMethods: undefined;
-  EditProfile: undefined;
-};
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-interface ProfileOption {
-  icon: string;
-  title: string;
-  description: string;
-  route: keyof RootStackParamList;
-}
-
+import supabase from '../../supabase';
 
 export default function Profile() {
-
   const { user, session, signOut, isLoading } = useAuth();
-  const navigation = useNavigation();
   const router = useRouter();
+  const [userProfile, setUserProfile] = useState<{
+    full_name: string;
+    email: string;
+  } | null>(null);
 
-  console.log("Current session from context:", session);
-  console.log("Current user:", user);
+  // Fetch user profile data from customer_details table
+  const fetchUserProfile = async () => {
+    if (!user || !session) return;
 
+    try {
+      // Query the customer_details table
+      const { data, error } = await supabase
+        .from('customer_details')
+        .select('full_name, email')
+        .eq('user_id', user.id)
+        .single();
 
-  console.log("Current session:", session);
-
-  const handleLogout = async () => {
-    await signOut();
-    router.replace('/'); // Redirect to sign-in screen
-
+      if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+        console.error('Error fetching customer details:', error);
+        // Fallback to auth user data
+        setUserProfile({
+          full_name:
+            user.user_metadata?.full_name ||
+            user.email?.split('@')[0]?.replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) ||
+            'User',
+          email: user.email || '',
+        });
+      } else if (data) {
+        // Use data from customer_details
+        setUserProfile({
+          full_name: data.full_name || 'User',
+          email: data.email || user.email || '',
+        });
+      } else {
+        // No data found, use fallback
+        setUserProfile({
+          full_name:
+            user.user_metadata?.full_name ||
+            user.email?.split('@')[0]?.replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) ||
+            'User',
+          email: user.email || '',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching customer details:', error);
+      // Fallback to auth user data
+      setUserProfile({
+        full_name:
+          user.user_metadata?.full_name ||
+          user.email?.split('@')[0]?.replace(/[^a-zA-Z]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) ||
+          'User',
+        email: user.email || '',
+      });
+    }
   };
 
-
-  const profileOptions: ProfileOption[] = [
-    {
-      icon: 'heart-outline',
-      title: 'Favorites',
-      description: 'View your favorite items',
-      route: 'Favorites'
-    },
-    {
-      icon: 'time-outline',
-      title: 'Order History',
-      description: 'Check your past orders',
-      route: 'OrderHistory'
-    },
-    {
-      icon: 'location-outline',
-      title: 'Addresses',
-      description: 'Manage delivery addresses',
-      route: 'Addresses'
-    },
-    {
-      icon: 'card-outline',
-      title: 'Payment Methods',
-      description: 'Manage your payment options',
-      route: 'PaymentMethods'
+  useEffect(() => {
+    if (user && session) {
+      fetchUserProfile();
     }
-  ];
+  }, [user, session]);
 
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+              await AsyncStorage.multiRemove(['@cart_items']);
+              router.replace('/');
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
-  const renderProfileOption = ({ icon, title, description, route }: ProfileOption) => (
-    <TouchableOpacity
-      key={title}
-      style={styles.optionCard}
-      onPress={() => router.push(`/`)}
-    >
-      <View style={styles.optionIconContainer}>
-        <Ionicons name={icon as any} size={24} color="#FF5722" />
+  // Loading state
+  if (isLoading || !userProfile) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF5722" />
+        <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
-      <View style={styles.optionTextContainer}>
-        <Text style={styles.optionTitle}>{title}</Text>
-        <Text style={styles.optionDescription}>{description}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={24} color="#999" />
-    </TouchableOpacity>
-  );
+    );
+  }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.settingsButton}>
-          <Ionicons name="settings-outline" size={24} color="#333" />
-        </TouchableOpacity>
-      </View>
-
-      <Text>{session ? "Logged in ;)" : "Ain't logged in Bro"}</Text>
-
-
-      <View style={styles.profileSection}>
-        <View style={styles.avatarContainer}>
-          <Image
-            source={{ uri: 'https://placekitten.com/200/200' }}
-            style={styles.avatar}
-          />
-          <TouchableOpacity style={styles.editAvatarButton}>
-            <MaterialCommunityIcons name="camera" size={20} color="#FFF" />
-          </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Profile Header */}
+      <View style={styles.profileHeader}>
+        <View style={styles.profileImageContainer}>
+          <View style={[styles.profileImage, styles.defaultAvatar]}>
+            <Ionicons name="person" size={40} color="#999" />
+          </View>
         </View>
-
-        <View style={styles.userInfoContainer}>
-          <Text style={styles.userName}>ABra ka davra</Text>
-          <Text style={styles.userEmail}>Americanpie@pork</Text>
-
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => console.log('Edit Profile Pressed')}
-          >
-            <Text style={styles.editButtonText}>Edit Profile</Text>
-            <MaterialCommunityIcons name="pencil" size={20} color="#FF5722" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>12</Text>
-            <Text style={styles.statLabel}>Orders</Text>
-          </View>
-          <View style={[styles.statItem, styles.statBorder]}>
-            <Text style={styles.statNumber}>5</Text>
-            <Text style={styles.statLabel}>Reviews</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>3</Text>
-            <Text style={styles.statLabel}>Addresses</Text>
-          </View>
+        <View style={styles.profileInfo}>
+          <Text style={styles.profileName} numberOfLines={1}>
+            {userProfile.full_name}
+          </Text>
+          <Text style={styles.profileEmail}>{userProfile.email}</Text>
         </View>
       </View>
 
-      <View style={styles.optionsContainer}>
-        <Text style={styles.sectionTitle}>Account Settings</Text>
-        {profileOptions.map(renderProfileOption)}
-      </View>
-
-      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+      {/* Logout Button */}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={24} color="#FF5722" />
-        <Text style={styles.logoutText}>Log Out</Text>
-
+        <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#f5f5f5',
+    padding: 20,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  settingsButton: {
-    padding: 8,
-  },
-  profileSection: {
-    backgroundColor: '#FFF',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 5,
-      },
-    }),
+    backgroundColor: '#f5f5f5',
   },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 15,
-  },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: '#FFF',
-  },
-  editAvatarButton: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#FF5722',
-    padding: 8,
-    borderRadius: 20,
-    borderWidth: 3,
-    borderColor: '#FFF',
-  },
-  userInfoContainer: {
-    alignItems: 'center',
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  userEmail: {
+  loadingText: {
+    marginTop: 10,
     fontSize: 16,
     color: '#666',
-    marginTop: 5,
   },
-  editButton: {
+  profileHeader: {
+    backgroundColor: '#fff',
+    padding: 20,
+    marginBottom: 20,
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    marginTop: 15,
-    borderWidth: 1,
-    borderColor: '#FF5722',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    top: 50
   },
-  editButtonText: {
-    color: '#FF5722',
-    marginRight: 8,
-    fontSize: 16,
-    fontWeight: '500',
+  profileImageContainer: {
+    marginRight: 15,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    marginTop: 20,
-    paddingHorizontal: 20,
+  profileImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
   },
-  statItem: {
+  defaultAvatar: {
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileInfo: {
     flex: 1,
-    alignItems: 'center',
   },
-  statBorder: {
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: '#EEE',
-    paddingHorizontal: 15,
-  },
-  statNumber: {
+  profileName: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 5,
   },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 5,
-  },
-  optionsContainer: {
-    padding: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
-  },
-  optionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  optionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFF5F2',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  optionTextContainer: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  optionTitle: {
+  profileEmail: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  optionDescription: {
-    fontSize: 14,
     color: '#666',
-    marginTop: 2,
   },
   logoutButton: {
     flexDirection: 'row',
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 20,
-    paddingVertical: 15,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    top: 50
   },
   logoutText: {
-    marginLeft: 8,
     fontSize: 16,
-    color: '#FF5722',
     fontWeight: '600',
+    color: '#FF5722',
+    marginLeft: 10,
   },
 });

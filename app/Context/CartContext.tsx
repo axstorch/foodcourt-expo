@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { debounce } from 'lodash'; // Install lodash: npm install lodash
 
-// Define the structure of a food item
 interface FoodItem {
   item_id: number;
   vendor_name: string;
@@ -12,12 +13,10 @@ interface FoodItem {
   description: string;
 }
 
-// Extend FoodItem to include quantity for cart items
 interface CartItem extends FoodItem {
   quantity: number;
 }
 
-// Define the Cart Context type
 interface CartContextType {
   items: CartItem[];
   addItem: (item: FoodItem) => void;
@@ -26,57 +25,115 @@ interface CartContextType {
   getTotalPrice: () => number;
   getTotalItems: () => number;
   clearCart: () => void;
+  isLoading: boolean;
+  refreshCart: () => void; // New method to manually refresh cart
 }
 
-// Create the Cart Context
 export const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// CartProvider component to manage cart state
+const CART_STORAGE_KEY = '@cart_items';
+
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [items, setItems] = useState<CartItem[]>([]); // Ensures items is always an array
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Add an item to the cart
-  const addItem = (item: FoodItem) => {
-    setItems((prevItems) => {
-      const existingItem = prevItems.find((i) => i.item_id === item.item_id);
-
-      if (existingItem) {
-        return prevItems.map((i) =>
-          i.item_id === item.item_id ? { ...i, quantity: i.quantity + 1 } : i
-        );
+  // Debounced save to AsyncStorage
+  const saveCartToStorage = useCallback(
+    debounce(async (cartItems: CartItem[]) => {
+      try {
+        await AsyncStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+      } catch (error) {
+        console.error('Error saving cart:', error);
       }
-      return [...prevItems, { ...item, quantity: 1 }];
-    });
-  };
+    }, 300), // Debounce for 300ms
+    []
+  );
 
-  // Update quantity of an item in the cart
-  const updateQuantity = (item_Id: number, increment: number) => {
-    setItems((prevItems) =>
-      prevItems.reduce<CartItem[]>((acc, item) => {
-        if (item.item_id === item_Id) {
-          const newQuantity = item.quantity + increment;
-          if (newQuantity > 0) acc.push({ ...item, quantity: newQuantity });
+  const loadCart = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const storedCart = await AsyncStorage.getItem(CART_STORAGE_KEY);
+      if (storedCart !== null) {
+        setItems(JSON.parse(storedCart));
+      }
+    } catch (error) {
+      console.error('Error loading cart:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCart();
+  }, [loadCart]);
+
+  const addItem = useCallback(
+    (item: FoodItem) => {
+      setItems((prevItems) => {
+        const existingItem = prevItems.find((i) => i.item_id === item.item_id);
+        let newItems: CartItem[];
+        if (existingItem) {
+          newItems = prevItems.map((i) =>
+            i.item_id === item.item_id ? { ...i, quantity: i.quantity + 1 } : i
+          );
         } else {
-          acc.push(item);
+          newItems = [...prevItems, { ...item, quantity: 1 }];
         }
-        return acc;
-      }, [])
-    );
-  };
+        saveCartToStorage(newItems);
+        return newItems;
+      });
+    },
+    [saveCartToStorage]
+  );
 
-  //  Remove an item from the cart
-  const removeItem = (item_Id: number) => {
-    setItems((prevItems) => prevItems.filter((item) => item.item_id !== item_Id));
-  };
+  const updateQuantity = useCallback(
+    (item_Id: number, increment: number) => {
+      setItems((prevItems) => {
+        const newItems = prevItems.reduce<CartItem[]>((acc, item) => {
+          if (item.item_id === item_Id) {
+            const newQuantity = item.quantity + increment;
+            if (newQuantity > 0) {
+              acc.push({ ...item, quantity: newQuantity });
+            }
+          } else {
+            acc.push(item);
+          }
+          return acc;
+        }, []);
+        saveCartToStorage(newItems);
+        return newItems;
+      });
+    },
+    [saveCartToStorage]
+  );
 
-  //  Calculate total price
-  const getTotalPrice = () => items.reduce((total, item) => total + item.price * item.quantity, 0);
+  const removeItem = useCallback(
+    (item_Id: number) => {
+      setItems((prevItems) => {
+        const newItems = prevItems.filter((item) => item.item_id !== item_Id);
+        saveCartToStorage(newItems);
+        return newItems;
+      });
+    },
+    [saveCartToStorage]
+  );
 
-  // Calculate total number of items in cart
-  const getTotalItems = () => items.reduce((total, item) => total + item.quantity, 0);
+  const getTotalPrice = useCallback(() => {
+    return items.reduce((total, item) => total + item.price * item.quantity, 0);
+  }, [items]);
 
-  // Clear the cart
-  const clearCart = () => setItems([]);
+  const getTotalItems = useCallback(() => {
+    return items.reduce((total, item) => total + item.quantity, 0);
+  }, [items]);
+
+  const clearCart = useCallback(() => {
+    setItems([]);
+    saveCartToStorage([]);
+  }, [saveCartToStorage]);
+
+  const refreshCart = useCallback(() => {
+    loadCart();
+  }, [loadCart]);
 
   return (
     <CartContext.Provider
@@ -87,7 +144,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         removeItem,
         getTotalPrice,
         getTotalItems,
-        clearCart
+        clearCart,
+        isLoading,
+        refreshCart,
       }}
     >
       {children}
@@ -95,7 +154,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-// Custom hook to use the Cart Context
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
@@ -103,4 +161,5 @@ export const useCart = () => {
   }
   return context;
 };
-export default CartProvider
+
+export default CartProvider;

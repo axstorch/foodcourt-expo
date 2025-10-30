@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
   Image,
   Dimensions,
   Platform,
+  Animated,
+  LayoutChangeEvent,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useCart } from '../Context/CartContext';  // Use relative path
+import { useCart } from '../Context/CartContext';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useAuth } from '../Context/AuthContext';
-
 
 interface FoodCourt {
   id: string;
@@ -33,11 +33,42 @@ interface FoodItem {
   image: string;
 }
 
+const { width } = Dimensions.get('window');
 
 const HomePage: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  // const { items, addItem, updateQuantity } = useCart();
   const router = useRouter();
+  const { user, session, signOut, isLoading } = useAuth();
+  const [textWidth, setTextWidth] = useState(0); // Store text width
+  const translateX = useRef(new Animated.Value(0)).current; // Animation value
+  useEffect(() => {
+    const animateText = () => {
+      translateX.setValue(width); // Start off-screen to the right
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(translateX, {
+            toValue: -textWidth, // Move left to the end of the text
+            duration: Math.max(5000, textWidth * 6), // Scale duration with text width
+            useNativeDriver: true,
+          }),
+
+
+          Animated.timing(translateX, {
+            toValue: width, // Reset to right instantly
+            duration: 0, // Instant reset for seamless loop
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+    if (textWidth > 0) {
+      // Start animation only after text width is measured
+      animateText();
+    }
+  }, [translateX, textWidth]);
+
+  console.log(Math.max(5000, textWidth * 6))
+
+
   const handleMenuPress = () => {
     router.push('../VendorPage');
   };
@@ -46,28 +77,14 @@ const HomePage: React.FC = () => {
     router.push('/Menu');
   };
 
-
   const foodItems: FoodItem[] = [
     { id: '1', name: 'Chow Mein', price: 8.99, cuisine: 'Chinese', image: require('../../assets/images/Chowmein.png') },
-    // { id: '2', name: 'MOMO', price: 12.99, cuisine: 'Chinese', image: require('../../assets/images/Momo.png') },
-    // { id: '3', name: 'Dairy Milk', price: 9.99, cuisine: 'Western', image: require('../../assets/images/Dairymilk.png') },
     { id: '4', name: 'Patties', price: 14.99, cuisine: 'Western', image: require('../../assets/images/Patties.png') },
     { id: '5', name: 'Tea', price: 10.99, cuisine: 'Beverages', image: require('../../assets/images/Tea.png') },
-    // { id: '6', name: 'Pizza', price: 11.99, cuisine: 'Western', image: require('../../assets/images/Pizza.png') },
     { id: '7', name: 'Chhole Bhature', price: 13.99, cuisine: 'Indian', image: require('../../assets/images/ChholeBhature.png') },
     { id: '8', name: 'Chicken chowmein', price: 9.99, cuisine: 'Chinese', image: require('../../assets/images/ChickChowmein.png') },
     { id: '9', name: 'Pasta', price: 9.99, cuisine: 'Italian', image: require('../../assets/images/pasta.png') },
-
   ];
-
-  const { user, session, signOut, isLoading } = useAuth();
-
-  // console.log("Current session from context:", session);
-  // console.log("Current user:", user);
-
-
-  // console.log("Current session:", session);
-
 
   const foodcourt: FoodCourt[] = [
     {
@@ -76,34 +93,32 @@ const HomePage: React.FC = () => {
       vendors: ['(Mech)FoodCourt-17', 'FoodCourt-21', 'FoodCourt-33,', 'FoodCourt-21', 'Foodcourt-66 '],
       distance: '0.2 km',
       rating: 4.3,
-      image: require('../../assets/images/FoodCourt_6.jpg')
-
-    }
+      image: require('../../assets/images/FoodCourt_6.jpg'),
+    },
   ];
+
+  // Measure text width using onLayout
+  const handleTextLayout = (event: LayoutChangeEvent) => {
+    const { width: measuredWidth } = event.nativeEvent.layout;
+    setTextWidth(measuredWidth + 40); // Add padding for smooth animation
+  };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        {/* <TouchableOpacity>
-          <MaterialIcons name="menu" size={24} color="#333" />
-        </TouchableOpacity> */}
         <View>
           <Text style={styles.headerTitle}>FoodCourt</Text>
         </View>
-
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <MaterialIcons name="search" size={20} color="#666" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search menu, restaurant or etc"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <MaterialIcons name="tune" size={20} color="#666" />
+      {/* Animated Banner */}
+      <View style={styles.animatedBanner}>
+        <View style={styles.textWrapper} onLayout={handleTextLayout}>
+          <Animated.Text style={[styles.bannerText, { transform: [{ translateX }] }]}>
+            YOUR CAMPUS FOOD, JUST FASTER! &nbsp; YOUR CAMPUS FOOD, JUST FASTER!
+          </Animated.Text>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -111,9 +126,7 @@ const HomePage: React.FC = () => {
         <View style={styles.promoBanner}>
           <View style={styles.promoContent}>
             <Text style={styles.promoTitle}>Can't study?{'\n'}Growling Tummy?{'\n'}Why wait?</Text>
-            <TouchableOpacity onPress={() => handleMenuPress()}
-              style={styles.orderButton}>
-
+            <TouchableOpacity onPress={handleMenuPress} style={styles.orderButton}>
               <Text style={styles.orderButtonText}>Order now</Text>
             </TouchableOpacity>
           </View>
@@ -127,22 +140,17 @@ const HomePage: React.FC = () => {
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Top Categories</Text>
-            {/* <TouchableOpacity>
-              <Text style={styles.seeAllText}>See all</Text>
-            </TouchableOpacity> */}
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
             {foodItems.map((FoodItem) => (
-              <TouchableOpacity key={FoodItem.id} style={styles.FoodItem}
-              >
-
-                <Image source={
-                  typeof FoodItem.image === 'string'
-                    ? { uri: FoodItem.image }
-                    : FoodItem.image
-                }
+              <TouchableOpacity key={FoodItem.id} style={styles.FoodItem}>
+                <Image
+                  source={
+                    typeof FoodItem.image === 'string'
+                      ? { uri: FoodItem.image }
+                      : FoodItem.image
+                  }
                   style={styles.FoodIcon}
-
                 />
                 <Text style={styles.FoodName}>{FoodItem.cuisine}</Text>
               </TouchableOpacity>
@@ -154,23 +162,21 @@ const HomePage: React.FC = () => {
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Top Discount</Text>
-            {/* <TouchableOpacity>
-              <Text style={styles.seeAllText}>See all</Text>
-            </TouchableOpacity> */}
           </View>
           <View style={styles.discountGrid}>
             {foodcourt.map((FoodCourt) => (
               <TouchableOpacity
-                onPress={() => handleMenuPress()}
-                key={FoodCourt.id} style={styles.discountCard}>
-
-                <Image source={
-                  typeof FoodCourt.image === 'string'
-                    ? { uri: FoodCourt.image }
-                    : FoodCourt.image
-                }
+                onPress={handleMenuPress}
+                key={FoodCourt.id}
+                style={styles.discountCard}
+              >
+                <Image
+                  source={
+                    typeof FoodCourt.image === 'string'
+                      ? { uri: FoodCourt.image }
+                      : FoodCourt.image
+                  }
                   style={styles.discountImage}
-
                 />
                 <View style={styles.discountInfo}>
                   <Text style={styles.FoodCourtName}>{FoodCourt.name}</Text>
@@ -191,7 +197,6 @@ const HomePage: React.FC = () => {
   );
 };
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -211,24 +216,28 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ff6f61',
   },
-  // headerSubtitle: {
-  //   fontSize: 16,
-  //   color: '#666',
-  //   textAlign: 'center',
-  // },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    margin: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+  animatedBanner: {
     backgroundColor: '#f5f5f5',
-    borderRadius: 25,
+    paddingHorizontal: 0,
+    marginVertical: 10,
+    margin: 0,
+    height: 80,
+    borderRadius: 5,
+    // No overflow: 'hidden' to prevent clipping
   },
-  searchInput: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 16,
+  textWrapper: {
+    flexDirection: 'row', // Ensure horizontal layout
+    width: '400%',
+    justifyContent: 'center',
+    paddingTop: 18,
+    // paddingVertical:8,,
+  },
+  bannerText: {
+    fontSize: 35, // Adjust as needed
+    fontWeight: 'semibold',
+    color: 'black',
+    flexWrap: 'nowrap', // Prevent text wrapping
+    overflow: 'visible',
   },
   promoBanner: {
     flexDirection: 'row',
@@ -240,7 +249,6 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowOffset: { width: 2, height: 2 },
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
     elevation: 4,
   },
   promoContent: {
@@ -261,7 +269,6 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowOffset: { width: 2, height: 2 },
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   },
   orderButtonText: {
     color: '#fff',
@@ -271,11 +278,10 @@ const styles = StyleSheet.create({
     marginTop: 25,
     width: 150,
     height: 150,
-    borderRadius: 75, // Keep this for rounded image
-    borderWidth: 15, // Border thickness
-    borderColor: 'white', // Border color
-    overflow: 'hidden', // Ensures the border is applied within the rounded corners
-    // padding: 0, // Padding between the image and border
+    borderRadius: 75,
+    borderWidth: 15,
+    borderColor: 'white',
+    overflow: 'hidden',
     resizeMode: 'contain',
     elevation: 5,
   },
@@ -293,9 +299,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-  },
-  seeAllText: {
-    color: '#666',
   },
   categoriesScroll: {
     paddingLeft: 16,
@@ -326,13 +329,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
   },
-  //this is for the menu images:
   discountImage: {
     width: '100%',
     height: 200,
     flexDirection: 'row',
     alignContent: 'center',
-    //borderRadius: 12,
     marginBottom: 8,
     elevation: 0,
     resizeMode: 'cover',

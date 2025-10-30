@@ -37,8 +37,8 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
           <Stack.Screen name="CourtDetails/CourtDetails" options={{ headerShown: false }} />
-          <Stack.Screen name="VendorPage" options={{ headerShown: false, title: 'Vendors' }} />
-          <Stack.Screen name="(Foodcourt_menu)/Menu" options={{ headerShown: false }} />
+          <Stack.Screen name="VendorPage" options={{ headerShown: true, title: 'Vendors' }} />
+          <Stack.Screen name="(Foodcourt_menu)/Menu" options={{ headerShown: true, title: 'Menu' }} />
           <Stack.Screen name="(payment_screen)/payment" options={{ headerShown: false, title: 'Crave' }} />
         </Stack>
 

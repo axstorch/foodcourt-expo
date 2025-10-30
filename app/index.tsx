@@ -23,10 +23,10 @@ export default function SignIn() {
   });
 
 
-
   useEffect(() => {
 
     if (!isLoading && user) {
+      console.log("User is already logged in, redirecting to home.");
       router.replace('/(tabs)/home');
     }
   }, [user, isLoading]);
@@ -49,10 +49,13 @@ export default function SignIn() {
         return;
       }
 
-      if (data.session) {
-        // Session is already persisted by Supabase
-        router.replace('/(tabs)/home');
-      }
+      // if (!data.session) 
+      // {
+      //   Alert.alert('Error', 'No active session found after sign-in.');
+      //   router.replace('/(auth)/signIn');
+      // }
+
+
     } catch (err) {
       console.error('Unexpected error:', err);
       Alert.alert('Unexpected error', 'An unexpected error occurred. Please try again.');

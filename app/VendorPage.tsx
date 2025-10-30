@@ -5,7 +5,6 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, ImageBackground, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import VideoSplashScreen from '../components/Loading/Loading';
 import supabase from '../supabase';
-import BannerVendor from '../components/BannerVendor/BannerVendor';
 
 interface Vendor {
   vendor_id: number;

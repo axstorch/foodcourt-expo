@@ -22,8 +22,9 @@ export default function TabLayout() {
               tabBarActiveTintColor: "#ff6f61",
               tabBarInactiveTintColor: "#000",
               headerShown: false,
-             // tabBarButton: HapticTab,
-              tabBarBackground: TabBarBackground,
+              // tabBarButton: HapticTab,
+              tabBarBackground: TabBarBackground
+              ,
               tabBarStyle: Platform.select({
                 ios: {
                   borderTopColor: 'transparent', backgroundColor: '#fff', borderTopLeftRadius: 50,
@@ -31,7 +32,7 @@ export default function TabLayout() {
 
                 },
                 default: {
-                  tabBarBackground: '#ff6f61',
+                  tabBarBackground: '#95c444ff',
                   borderTopColor: 'transparent', backgroundColor: '#fff', borderTopLeftRadius: 50,
                   borderTopRightRadius: 50, borderWidth: 0, borderColor: 'transparent'
                 },
